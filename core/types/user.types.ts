@@ -10,6 +10,9 @@ export interface User {
 }
 
 export interface AuthResponse {
-  access_token: string;
-  user: User;
+  data: {
+    access_token: string;
+    desquare_token: string;
+    complete_phone_number_required: boolean;
+  };
 }

@@ -14,6 +14,8 @@ import {
 import { Input } from '@ui/common/input';
 import { Button } from '@ui/common/button';
 import serveLoginMeta from '~/meta/serveLoginMeta';
+import type { AuthResponse, User } from 'core/types/user.types';
+import api from '@utils/api';
 
 export const meta = serveLoginMeta;
 
@@ -33,9 +35,19 @@ export default function Login() {
       identifier: string;
       password: string;
     }) => authApi.login(identifier, password),
-    onSuccess: (response) => {
-      const { access_token, user } = response.data;
-      setAuth(user, access_token);
+    onSuccess: async (response) => {
+      const { access_token, desquare_token, complete_phone_number_required } =
+        response.data.data;
+      const userResponse = await api.get<User>(
+        '/users/profile?relations[profile_image]=true',
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        }
+      );
+      console.log('user profile response', userResponse.data);
+      setAuth(userResponse.data, access_token);
       toast.success('Login successful');
     },
     onError: (error: any) => {
