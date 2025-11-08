@@ -31,12 +31,15 @@ type Pages = {
   "/banners": {
     params: {};
   };
+  "/notifications": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/auth/login" | "/auth/forgot-password" | "/dashboard" | "/users" | "/brands" | "/banners";
+    page: "/" | "/auth/login" | "/auth/forgot-password" | "/dashboard" | "/users" | "/brands" | "/banners" | "/notifications";
   };
   "pages/index.tsx": {
     id: "pages/index";
@@ -65,5 +68,9 @@ type RouteFiles = {
   "pages/banners.tsx": {
     id: "pages/banners";
     page: "/banners";
+  };
+  "pages/notifications.tsx": {
+    id: "pages/notifications";
+    page: "/notifications";
   };
 };

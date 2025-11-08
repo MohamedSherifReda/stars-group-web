@@ -12,7 +12,17 @@ const createApi = (): AxiosInstance => {
     timeout: 10000, // 10 second timeout
     headers: {
       'Content-Type': 'application/json',
+      // Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}`,
     },
+  });
+
+  instance.interceptors.request.use((config) => {
+    if (isServer) return config;
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
   });
 
   // Request interceptor

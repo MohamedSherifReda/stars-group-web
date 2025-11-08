@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { Sidebar } from './Sidebar';
 
-const protectedRoutes = ['/dashboard', '/users', '/brands', '/banners'];
+const protectedRoutes = ['/dashboard', '/users', '/brands', '/banners', '/notifications'];
 
 export const isProtectedRoute = (path: string) => {
   return protectedRoutes.includes(path);

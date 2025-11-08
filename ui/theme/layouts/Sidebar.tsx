@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router';
-import { Users, Tag, Image, LayoutDashboard, LogOut } from 'lucide-react';
+import { Users, Tag, Image, LayoutDashboard, LogOut, Bell } from 'lucide-react';
 import { Button } from '@ui/common/button';
 import { useAuthStore } from 'infrastructure/store/auth';
 
@@ -23,6 +23,11 @@ const sidebarItems = [
     title: 'Banners',
     href: '/banners',
     icon: Image,
+  },
+  {
+    title: 'Notifications',
+    href: '/notifications',
+    icon: Bell,
   },
 ];
 

@@ -8,4 +8,5 @@ export default [
   route('/users', 'pages/users.tsx'),
   route('/brands', 'pages/brands.tsx'),
   route('/banners', 'pages/banners.tsx'),
+  route('/notifications', 'pages/notifications.tsx'),
 ] satisfies RouteConfig;
