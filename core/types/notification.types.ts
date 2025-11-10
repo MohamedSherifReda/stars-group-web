@@ -11,8 +11,8 @@ export interface Notification {
   created_at: string;
   updated_at: string;
   deleted_at?: string;
-  // the rest are not yet implemented by the backend...
-  scheduled_at?: string; // ISO date string
+  // Backend uses schedule_at (without the 'd')
+  schedule_at?: string; // ISO date string
   sent_at?: string; // ISO date string - when notification was actually sent
   status?: 'scheduled' | 'sent' | 'failed';
   user?: User;
@@ -23,25 +23,24 @@ export interface CreateNotificationPayload {
   message: string;
   users: number[];
   link?: string;
-  // not yet implemented by the backend...
-  scheduled_at?: string;
+  // Backend expects schedule_at (without the 'd')
+  schedule_at?: string;
   brand_id?: number;
-  
 }
-
 
 export interface BroadCastNotificationPayload {
   title: string;
   message: string;
   link?: string;
   brand_id?: number;
+  schedule_at?: string;
 }
 
 export interface UpdateNotificationPayload {
   title?: string;
   message?: string;
   link?: string;
-  scheduled_at?: string;
+  schedule_at?: string;
   target_audience?: 'all';
 }
 
