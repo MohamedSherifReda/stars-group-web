@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+       context: .
+       dockerfile: Dockerfile.pnpm
+    restart: unless-stopped
+    env_file: '.env'
+    ports:
+      - 7285:5000
