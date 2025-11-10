@@ -44,13 +44,17 @@ import { Badge } from '@ui/common/badge';
 import { DataTable, type ColumnDef } from '@ui/common/data-table';
 import { Calendar } from '@ui/common/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@ui/common/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { cn } from '@utils/cn';
 import serveNotificationsMeta from '~/meta/serveNotificationsMeta';
 import {
   UsersDropdown,
   ALL_USERS_VALUE,
 } from '@features/user/components/UsersDropdown';
-import type { BroadCastNotificationPayload } from 'core/types/notification.types';
+import type {
+  BroadCastNotificationPayload,
+  ScheduledNotification,
+} from 'core/types/notification.types';
 
 export const meta = serveNotificationsMeta;
 
@@ -93,10 +97,15 @@ export default function Notifications() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingNotification, setEditingNotification] =
     useState<Notification | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
 
-  // Pagination state
+  // Pagination state for all notifications
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  // Pagination state for scheduled notifications
+  const [scheduledCurrentPage, setScheduledCurrentPage] = useState(1);
+  const [scheduledPageSize, setScheduledPageSize] = useState(10);
 
   const queryClient = useQueryClient();
 
@@ -137,13 +146,37 @@ export default function Notifications() {
   const totalNotifications = notificationsResponse?.meta?.total || 0;
   const totalPages = Math.ceil(totalNotifications / pageSize);
 
-  console.log('notifications', notificationsResponse);
+  // Fetch scheduled notifications with pagination
+  const {
+    data: scheduledNotificationsResponse,
+    isLoading: isLoadingScheduled,
+  } = useQuery({
+    queryKey: [
+      'scheduled-notifications',
+      scheduledCurrentPage,
+      scheduledPageSize,
+    ],
+    queryFn: () =>
+      notificationsApi
+        .getScheduledNotifications({
+          'pagination[take]': scheduledPageSize,
+          'pagination[skip]': (scheduledCurrentPage - 1) * scheduledPageSize,
+          'orders[created_at]': 'desc',
+        })
+        .then((res) => res.data),
+  });
+
+  const scheduledNotifications = scheduledNotificationsResponse?.data || [];
+  const totalScheduledNotifications =
+    scheduledNotificationsResponse?.meta?.total || 0;
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (notification: CreateNotificationPayload) =>
       notificationsApi.createNotification(notification),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       setIsCreateOpen(false);
       setCurrentPage(1); // Reset to first page to see the new notification
       reset();
@@ -162,6 +195,7 @@ export default function Notifications() {
       notificationsApi.broadcastNotification(notification),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       setIsCreateOpen(false);
       setCurrentPage(1);
       reset();
@@ -185,6 +219,7 @@ export default function Notifications() {
     }) => notificationsApi.updateNotification(id, notification),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       setEditingNotification(null);
       reset();
       toast.success('Notification updated successfully');
@@ -201,6 +236,7 @@ export default function Notifications() {
     mutationFn: (id: number) => notificationsApi.deleteNotification(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       toast.success('Notification deleted successfully');
     },
     onError: (error: any) => {
@@ -347,7 +383,7 @@ export default function Notifications() {
     });
   };
 
-  // Define table columns
+  // Define table columns for all notifications
   const columns: ColumnDef<Notification>[] = [
     {
       id: 'id',
@@ -388,7 +424,6 @@ export default function Notifications() {
       header: 'Scheduled At',
       cell: (notification) => formatDateTime(notification.schedule_at),
     },
-
     {
       id: 'actions',
       header: 'Actions',
@@ -426,6 +461,83 @@ export default function Notifications() {
           )}
         </div>
       ),
+    },
+  ];
+
+  // Define table columns for scheduled notifications
+  const scheduledColumns: ColumnDef<ScheduledNotification>[] = [
+    {
+      id: 'id',
+      header: 'ID',
+      cell: (notification) => (
+        <span className="font-medium">{notification.id}</span>
+      ),
+    },
+    {
+      id: 'title',
+      header: 'Title',
+      cell: (notification) => (
+        <span className="font-medium">{notification.title}</span>
+      ),
+    },
+    {
+      id: 'message',
+      header: 'Message',
+      cell: (notification) => (
+        <span className="max-w-xs truncate block">{notification.message}</span>
+      ),
+      className: 'max-w-xs',
+    },
+    {
+      id: 'type',
+      header: 'Type',
+      cell: (notification) => (
+        <Badge variant="outline">{notification.type}</Badge>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (notification) => (
+        <Badge
+          className={cn({
+            'bg-green-500 hover:bg-green-600':
+              notification.status === 'completed',
+            'bg-blue-500 hover:bg-blue-600': notification.status === 'pending',
+            'bg-yellow-500 hover:bg-yellow-600':
+              notification.status === 'processing',
+            'bg-red-500 hover:bg-red-600': notification.status === 'failed',
+          })}
+        >
+          {notification.status}
+        </Badge>
+      ),
+    },
+    {
+      id: 'schedule_at',
+      header: 'Scheduled At',
+      cell: (notification) => formatDateTime(notification.schedule_at),
+    },
+    {
+      id: 'processed_count',
+      header: 'Processed',
+      cell: (notification) => (
+        <span className="font-medium">{notification.processed_count}</span>
+      ),
+    },
+    {
+      id: 'failed_count',
+      header: 'Failed',
+      cell: (notification) => (
+        <span className="font-medium text-red-500">
+          {notification.failed_count}
+        </span>
+      ),
+    },
+    {
+      id: 'created_at',
+      header: 'Created At',
+      cell: (notification) => formatDateTime(notification.created_at),
     },
   ];
 
@@ -680,35 +792,76 @@ export default function Notifications() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Notifications</CardTitle>
+          <CardTitle>Notifications Management</CardTitle>
           <CardDescription>
             View and manage all push notifications sent to your users.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            columns={columns}
-            data={notifications}
-            pagination={{
-              pageIndex: currentPage,
-              pageSize: pageSize,
-              totalItems: totalNotifications,
-            }}
-            onPaginationChange={(pageIndex, pageSize) => {
-              setCurrentPage(pageIndex);
-              setPageSize(pageSize);
-            }}
-            isLoading={isLoading}
-            emptyState={
-              <div className="flex flex-col items-center justify-center py-12">
-                <Send className="w-12 h-12 text-gray-400 mb-4" />
-                <p className="text-gray-500 text-lg">No notifications yet</p>
-                <p className="text-gray-400 text-sm">
-                  Create your first notification to get started
-                </p>
-              </div>
-            }
-          />
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="all">Notifications</TabsTrigger>
+              <TabsTrigger value="scheduled">
+                Scheduled Notifications
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="all">
+              <DataTable
+                columns={columns}
+                data={notifications}
+                pagination={{
+                  pageIndex: currentPage,
+                  pageSize: pageSize,
+                  totalItems: totalNotifications,
+                }}
+                onPaginationChange={(pageIndex, pageSize) => {
+                  setCurrentPage(pageIndex);
+                  setPageSize(pageSize);
+                }}
+                isLoading={isLoading}
+                emptyState={
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Send className="w-12 h-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500 text-lg">
+                      No notifications yet
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Create your first notification to get started
+                    </p>
+                  </div>
+                }
+              />
+            </TabsContent>
+
+            <TabsContent value="scheduled">
+              <DataTable
+                columns={scheduledColumns}
+                data={scheduledNotifications}
+                pagination={{
+                  pageIndex: scheduledCurrentPage,
+                  pageSize: scheduledPageSize,
+                  totalItems: totalScheduledNotifications,
+                }}
+                onPaginationChange={(pageIndex, pageSize) => {
+                  setScheduledCurrentPage(pageIndex);
+                  setScheduledPageSize(pageSize);
+                }}
+                isLoading={isLoadingScheduled}
+                emptyState={
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Clock className="w-12 h-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500 text-lg">
+                      No scheduled notifications
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Schedule notifications to be sent at a specific time
+                    </p>
+                  </div>
+                }
+              />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 

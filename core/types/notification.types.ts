@@ -18,6 +18,26 @@ export interface Notification {
   user?: User;
 }
 
+
+export interface ScheduledNotification {
+  id: number;
+  title: string;
+  message: string;
+  link: any;
+  brand_id?: number;
+  type: string;
+  status: string;
+  schedule_at: string;
+  target_user_ids: number[];
+  processed_count: number;
+  failed_count: number;
+  processed_at: any;
+  error_message: any;
+  created_at: string;
+  updated_at: string;
+  deleted_at: any;
+}
+
 export interface CreateNotificationPayload {
   title: string;
   message: string;

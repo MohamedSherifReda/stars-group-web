@@ -183,7 +183,8 @@ export const UsersDropdown = <T extends FieldValues>({
                         {!hasMore && loadedUsersCount > 0 && totalUsers > 0 && (
                           <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-2">
                             <p className="text-xs text-center text-gray-500">
-                              All {totalUsers} user{totalUsers !== 1 ? 's' : ''} loaded
+                              All {totalUsers} user{totalUsers !== 1 ? 's' : ''}{' '}
+                              loaded
                             </p>
                           </div>
                         )}
@@ -213,9 +214,11 @@ export const UsersDropdown = <T extends FieldValues>({
         name={name}
         defaultValue={(defaultValue || []) as any}
         render={({ field }) => {
-          const selectedIds: string[] = Array.isArray(field.value) ? field.value : [];
+          const selectedIds: string[] = Array.isArray(field.value)
+            ? field.value
+            : [];
           const isAllUsersSelected = selectedIds.includes(ALL_USERS_VALUE);
-          
+
           const toggleUser = (userId: string) => {
             // If toggling "All users"
             if (userId === ALL_USERS_VALUE) {
@@ -224,18 +227,18 @@ export const UsersDropdown = <T extends FieldValues>({
               onValueChange?.(newValue);
               return;
             }
-            
+
             // If "All users" is selected, don't allow selecting individual users
             if (isAllUsersSelected) {
               return;
             }
-            
+
             const newValue = selectedIds.includes(userId)
               ? selectedIds.filter((id) => id !== userId)
               : maxSelections && selectedIds.length >= maxSelections
               ? selectedIds
               : [...selectedIds, userId];
-            
+
             field.onChange(newValue);
             onValueChange?.(newValue);
           };
@@ -254,7 +257,9 @@ export const UsersDropdown = <T extends FieldValues>({
           };
 
           const selectedUsers = useMemo(() => {
-            return allUsers.filter((user) => selectedIds.includes(user.id.toString()));
+            return allUsers.filter((user) =>
+              selectedIds.includes(user.id.toString())
+            );
           }, [selectedIds]);
 
           return (
@@ -270,11 +275,11 @@ export const UsersDropdown = <T extends FieldValues>({
                 >
                   <div className="flex flex-wrap gap-1 flex-1">
                     {selectedIds.length === 0 ? (
-                      <span className="text-gray-500 dark:text-gray-400">{placeholder}</span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {placeholder}
+                      </span>
                     ) : isAllUsersSelected ? (
-                      <span
-                        className="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 rounded px-2 py-0.5 text-xs font-medium"
-                      >
+                      <span className="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 rounded px-2 py-0.5 text-xs font-medium">
                         All users
                         <X
                           className="h-3 w-3 cursor-pointer hover:text-red-500"
@@ -299,8 +304,12 @@ export const UsersDropdown = <T extends FieldValues>({
                   <ChevronDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <div className="max-h-[300px] overflow-y-auto">
+              <PopoverContent
+                className="w-[--radix-popover-trigger-width] p-0"
+                align="start"
+                onWheel={(e) => e.stopPropagation()}
+              >
+                <div className="max-h-[300px] overflow-y-auto overscroll-contain">
                   {isLoading && page === 1 ? (
                     <div className="flex items-center justify-center py-6">
                       <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
@@ -315,8 +324,12 @@ export const UsersDropdown = <T extends FieldValues>({
                         <>
                           <div className="p-2 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-950 z-10">
                             <span className="text-xs text-gray-500">
-                              {isAllUsersSelected ? 'All users selected' : `${selectedIds.length} selected`}
-                              {!isAllUsersSelected && maxSelections && ` (max ${maxSelections})`}
+                              {isAllUsersSelected
+                                ? 'All users selected'
+                                : `${selectedIds.length} selected`}
+                              {!isAllUsersSelected &&
+                                maxSelections &&
+                                ` (max ${maxSelections})`}
                             </span>
                             {selectedIds.length > 0 && (
                               <Button
@@ -337,7 +350,8 @@ export const UsersDropdown = <T extends FieldValues>({
                                 onClick={() => toggleUser(ALL_USERS_VALUE)}
                                 className={cn(
                                   'w-full flex items-center gap-2 px-2 py-2 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left border-b border-gray-200 dark:border-gray-800 mb-1',
-                                  isAllUsersSelected && 'bg-blue-50 dark:bg-blue-900/20'
+                                  isAllUsersSelected &&
+                                    'bg-blue-50 dark:bg-blue-900/20'
                                 )}
                               >
                                 <div
@@ -348,7 +362,9 @@ export const UsersDropdown = <T extends FieldValues>({
                                       : 'border-gray-300 dark:border-gray-600'
                                   )}
                                 >
-                                  {isAllUsersSelected && <Check className="h-3 w-3 text-white" />}
+                                  {isAllUsersSelected && (
+                                    <Check className="h-3 w-3 text-white" />
+                                  )}
                                 </div>
                                 <span className="flex-1 font-medium text-blue-700 dark:text-blue-400">
                                   All users
@@ -356,24 +372,30 @@ export const UsersDropdown = <T extends FieldValues>({
                               </button>
                             )}
                             {allUsers.map((user) => {
-                              const isSelected = selectedIds.includes(user.id.toString());
+                              const isSelected = selectedIds.includes(
+                                user.id.toString()
+                              );
                               const isDisabled = Boolean(
                                 isAllUsersSelected || // Disable if "All users" is selected
-                                (maxSelections && 
-                                selectedIds.length >= maxSelections && 
-                                !isSelected)
+                                  (maxSelections &&
+                                    selectedIds.length >= maxSelections &&
+                                    !isSelected)
                               );
 
                               return (
                                 <button
                                   key={user.id}
                                   type="button"
-                                  onClick={() => !isDisabled && toggleUser(user.id.toString())}
+                                  onClick={() =>
+                                    !isDisabled &&
+                                    toggleUser(user.id.toString())
+                                  }
                                   disabled={isDisabled}
                                   className={cn(
                                     'w-full flex items-center gap-2 px-2 py-2 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left',
                                     isSelected && 'bg-gray-50 dark:bg-gray-900',
-                                    isDisabled && 'opacity-50 cursor-not-allowed'
+                                    isDisabled &&
+                                      'opacity-50 cursor-not-allowed'
                                   )}
                                 >
                                   <div
@@ -384,9 +406,13 @@ export const UsersDropdown = <T extends FieldValues>({
                                         : 'border-gray-300 dark:border-gray-600'
                                     )}
                                   >
-                                    {isSelected && <Check className="h-3 w-3 text-white" />}
+                                    {isSelected && (
+                                      <Check className="h-3 w-3 text-white" />
+                                    )}
                                   </div>
-                                  <span className="flex-1">{renderUser(user)}</span>
+                                  <span className="flex-1">
+                                    {renderUser(user)}
+                                  </span>
                                 </button>
                               );
                             })}
@@ -412,13 +438,16 @@ export const UsersDropdown = <T extends FieldValues>({
                               </Button>
                             </div>
                           )}
-                          {!hasMore && loadedUsersCount > 0 && totalUsers > 0 && (
-                            <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-2">
-                              <p className="text-xs text-center text-gray-500">
-                                All {totalUsers} user{totalUsers !== 1 ? 's' : ''} loaded
-                              </p>
-                            </div>
-                          )}
+                          {!hasMore &&
+                            loadedUsersCount > 0 &&
+                            totalUsers > 0 && (
+                              <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-2">
+                                <p className="text-xs text-center text-gray-500">
+                                  All {totalUsers} user
+                                  {totalUsers !== 1 ? 's' : ''} loaded
+                                </p>
+                              </div>
+                            )}
                         </>
                       )}
                     </>

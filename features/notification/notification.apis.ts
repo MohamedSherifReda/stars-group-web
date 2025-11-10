@@ -4,6 +4,7 @@ import type {
   CreateNotificationPayload,
   UpdateNotificationPayload,
   BroadCastNotificationPayload,
+  ScheduledNotification,
 } from 'core/types/notification.types';
 
 /**
@@ -14,7 +15,21 @@ export const notificationsApi = {
    * Get all notifications with optional filtering
    */
   getNotifications: (params?: Record<string, any>) =>
-    api.get<{data:Notification[], meta:{total:number, skip:number, take:number}}>('/notifications', { params }),
+    api.get<{
+      data: Notification[];
+      meta: { total: number; skip: number; take: number };
+    }>('/notifications', { params }),
+
+  getScheduledNotifications: (params?: Record<string, any>) =>
+    api.get<{
+      data: ScheduledNotification[];
+      meta: { total: number; skip: number; take: number };
+    }>('/scheduled-notifications', { params }),
+
+  getScheduledNotification: (id: number, params?: Record<string, any>) =>
+    api.get<ScheduledNotification>(`/scheduled-notifications/${id}`, {
+      params,
+    }),
 
   /**
    * Get a single notification by ID
