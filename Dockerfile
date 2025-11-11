@@ -32,7 +32,7 @@ WORKDIR /app
 COPY --from=production-dependencies-env /app/node_modules ./node_modules
 
 # Copy built files from build-env
-COPY --from=build-env /app/dist ./dist
+COPY --from=build-env /app/build ./build
 
 # Copy package.json for runtime context
 COPY package.json ./
