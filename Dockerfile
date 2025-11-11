@@ -1,44 +1,72 @@
-FROM node:20-alpine AS development-dependencies-env
+# Stage 1: Install dependencies
+FROM node:20-alpine AS dependencies
 WORKDIR /app
 
-# Copy only lock + manifest first for caching
-COPY package.json pnpm-lock.yaml ./
-RUN npm i -g pnpm && pnpm install
+# Install pnpm
+RUN npm install -g pnpm
 
-# Copy full source code
+# Copy package files for caching
+COPY package.json pnpm-lock.yaml ./
+
+# Install all dependencies (including dev dependencies for build)
+RUN pnpm install --frozen-lockfile
+
+# Stage 2: Build the application
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy dependencies from previous stage
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies /app/package.json ./package.json
+
+# Copy source code
 COPY . .
 
-FROM node:20-alpine AS build-env
-WORKDIR /app
-
-# Copy node_modules and source from previous stage
-COPY --from=development-dependencies-env /app/node_modules ./node_modules
-COPY --from=development-dependencies-env /app ./
-
-# Run the build
+# Build the application
 RUN pnpm build
 
-FROM node:20-alpine AS production-dependencies-env
+# Stage 3: Production dependencies
+FROM node:20-alpine AS production-dependencies
 WORKDIR /app
 
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
-RUN npm i -g pnpm && pnpm install --prod --frozen-lockfile
 
+# Install only production dependencies
+RUN pnpm install --prod --frozen-lockfile
 
+# Stage 4: Production image
 FROM node:20-alpine
 WORKDIR /app
 
-# Copy production node_modules
-COPY --from=production-dependencies-env /app/node_modules ./node_modules
+# Install pnpm (needed for the start command)
+RUN npm install -g pnpm
 
-# Copy built files from build-env
-COPY --from=build-env /app/build ./build
+# Copy production dependencies
+COPY --from=production-dependencies /app/node_modules ./node_modules
 
-# Copy package.json for runtime context
+# Copy built application
+COPY --from=build /app/build ./build
+
+# Copy package.json for runtime
 COPY package.json ./
 
-# Expose default Vite preview port
-EXPOSE 4173
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
 
-# Start command (for Vite preview)
-CMD ["pnpm", "preview", "--host"]
+# Expose the port the app runs on
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Start the application using react-router-serve
+CMD ["pnpm", "start"]
