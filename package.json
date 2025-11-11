@@ -6,7 +6,8 @@
     "build": "cross-env NODE_ENV=production react-router build",
     "start:dev": "react-router dev --port 3000",
     "start": "cross-env NODE_ENV=production PORT=5000 react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
