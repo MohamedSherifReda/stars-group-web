@@ -6,4 +6,4 @@ services:
     restart: unless-stopped
     env_file: '.env'
     ports:
-      - 7285:5000
+      - 7285:3000
