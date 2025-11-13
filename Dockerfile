@@ -1,44 +1,16 @@
 FROM node:18
+
 WORKDIR /app
 
-# Copy only lock + manifest first for caching
-COPY package.json pnpm-lock.yaml ./
-RUN npm i -g pnpm && pnpm install
+COPY package*.json ./
 
-# Copy full source code
+# Install dependencies
+RUN npm install
+
 COPY . .
 
-FROM node:18
-WORKDIR /app
+# Build for production
+RUN npm run build
 
-# Copy node_modules and source from previous stage
-COPY --from=development-dependencies-env /app/node_modules ./node_modules
-COPY --from=development-dependencies-env /app ./
-
-# Run the build
-RUN pnpm build
-
-FROM node:18
-WORKDIR /app
-
-COPY package.json pnpm-lock.yaml ./
-RUN npm i -g pnpm && pnpm install --prod --frozen-lockfile
-
-
-FROM node:18
-WORKDIR /app
-
-# Copy production node_modules
-COPY --from=production-dependencies-env /app/node_modules ./node_modules
-
-# Copy built files from build-env
-COPY --from=build-env /app/build ./build
-
-# Copy package.json for runtime context
-COPY package.json ./
-
-# Expose default Vite preview port
-EXPOSE 3000
-
-# Start command (for Vite preview)
-CMD ["pnpm", "preview", "--host"]
+EXPOSE 4173
+CMD ["npx", "cross-env", "NODE_ENV=production", "PORT=4173", "react-router-serve", "./build/server/index.js", "--assets-build-directory", "./build/client"]
