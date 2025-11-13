@@ -1,0 +1,1 @@
+import{e as o}from"./card-BRZbrZQm.js";const e={login:(t,s)=>o.post("/auth/signin",{identifier:t,password:s}),forgetPassword:t=>o.post("/auth/forget-password",{identifier:t}),completeForgetPassword:(t,s)=>o.post("/auth/complete-forget-password",{identifier:t,password:s}),getSessionData:t=>o.get(`/auth/get-session-data/${t}`)};export{e as a};
