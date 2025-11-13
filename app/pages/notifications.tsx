@@ -88,7 +88,22 @@ const notificationSchema = z.object({
       },
       { message: 'Please enter a valid URL (e.g., https://example.com)' }
     ),
-  scheduled_at: z.string().optional(),
+  scheduled_at: z
+    .string()
+    .optional()
+    .refine(
+      (value) => {
+        // if value is not provided, return true since it's optional
+        if (!value) return true;
+        const scheduledDate = new Date(value);
+        const now = new Date();
+        // Compare timestamps to avoid any date object comparison quirks
+        return scheduledDate.getTime() >= now.getTime();
+      },
+      {
+        message: 'Scheduled date and time must be in the future',
+      }
+    ),
 });
 
 type NotificationFormData = z.infer<typeof notificationSchema>;
@@ -768,6 +783,11 @@ export default function Notifications() {
                   Leave empty to send immediately, or select a date and time to
                   schedule
                 </p>
+                {errors?.scheduled_at?.message && (
+                  <p className="text-sm text-red-500">
+                    {errors.scheduled_at.message}
+                  </p>
+                )}
               </div>
 
               <DialogFooter>
