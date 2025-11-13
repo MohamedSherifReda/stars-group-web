@@ -438,11 +438,7 @@ export default function Notifications() {
       header: 'Created At',
       cell: (notification) => formatDateTime(notification.created_at),
     },
-    {
-      id: 'scheduled_at',
-      header: 'Scheduled At',
-      cell: (notification) => formatDateTime(notification.schedule_at),
-    },
+
     {
       id: 'actions',
       header: 'Actions',
