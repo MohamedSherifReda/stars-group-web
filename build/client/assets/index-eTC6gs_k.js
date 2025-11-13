@@ -1,1 +1,0 @@
-import{u as n,a}from"./useLang-C947laj4.js";import{n as e}from"./chunk-BAXFHI7N-DH2xFhvJ.js";function r(){const{t}=n();return[{title:t.meta.home}]}const c=r,u=a(function({loaderData:s}){const{t:o}=n();return e.jsx("main",{children:e.jsx("h2",{children:o.meta.home})})});export{u as default,c as meta};

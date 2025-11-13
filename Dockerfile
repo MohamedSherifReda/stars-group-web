@@ -32,13 +32,13 @@ WORKDIR /app
 COPY --from=production-dependencies-env /app/node_modules ./node_modules
 
 # Copy built files from build-env
-COPY --from=build-env /app/dist ./dist
+COPY --from=build-env /app/build ./build
 
 # Copy package.json for runtime context
 COPY package.json ./
 
 # Expose default Vite preview port
-EXPOSE 4173
+EXPOSE 3000
 
 # Start command (for Vite preview)
 CMD ["pnpm", "preview", "--host"]
