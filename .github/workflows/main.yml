@@ -23,5 +23,7 @@ jobs:
             cd /home/wcfy/dev/stars-group-web;
             if [ ! -n "$(grep "^github.com " ~/.ssh/known_hosts)" ]; then ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null; fi;
             git stash -u;
+            git checkout staging;
             git pull;
+            docker compose down;
             docker compose up -d --build --remove-orphans;
