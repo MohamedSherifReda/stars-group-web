@@ -164,6 +164,10 @@ export default function Notifications() {
           'orders[created_at]': 'desc',
         })
         .then((res) => res.data),
+    staleTime: 0,
+    refetchInterval: 2 * 60 * 1000, // Refetch every 2 mins
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnMount: true, // Refetch when component mounts
   });
 
   const scheduledNotifications = scheduledNotificationsResponse?.data || [];
