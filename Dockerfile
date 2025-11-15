@@ -12,5 +12,5 @@ COPY . .
 # Build for production
 RUN npm run build
 
-EXPOSE 4173
-CMD ["npx", "cross-env", "NODE_ENV=production", "PORT=4173", "react-router-serve", "./build/server/index.js", "--assets-build-directory", "./build/client"]
+EXPOSE 5000
+CMD ["npx", "cross-env", "NODE_ENV=production", "PORT=5000", "react-router-serve", "./build/server/index.js", "--assets-build-directory", "./build/client"]
