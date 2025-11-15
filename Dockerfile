@@ -2,6 +2,10 @@ FROM node:18
 
 WORKDIR /app
 
+ARG VITE_BASE_URL
+
+ENV VITE_BASE_URL=${VITE_BASE_URL}
+
 COPY package*.json ./
 
 # Install dependencies
