@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Send,
-  Clock,
-  CheckCircle,
-  XCircle,
-  CalendarIcon,
-} from 'lucide-react';
+import { Plus, Edit, Trash2, Send, Clock, CalendarIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -365,31 +356,31 @@ export default function Notifications() {
     // }
   };
 
-  const getStatusBadge = (status: Notification['status']) => {
-    switch (status) {
-      case 'sent':
-        return (
-          <Badge className="bg-green-500 hover:bg-green-600">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Sent
-          </Badge>
-        );
-      case 'scheduled':
-        return (
-          <Badge className="bg-blue-500 hover:bg-blue-600">
-            <Clock className="w-3 h-3 mr-1" />
-            Scheduled
-          </Badge>
-        );
-      case 'failed':
-        return (
-          <Badge className="bg-red-500 hover:bg-red-600">
-            <XCircle className="w-3 h-3 mr-1" />
-            Failed
-          </Badge>
-        );
-    }
-  };
+  // const getStatusBadge = (status: Notification['status']) => {
+  //   switch (status) {
+  //     case 'sent':
+  //       return (
+  //         <Badge className="bg-green-500 hover:bg-green-600">
+  //           <CheckCircle className="w-3 h-3 mr-1" />
+  //           Sent
+  //         </Badge>
+  //       );
+  //     case 'scheduled':
+  //       return (
+  //         <Badge className="bg-blue-500 hover:bg-blue-600">
+  //           <Clock className="w-3 h-3 mr-1" />
+  //           Scheduled
+  //         </Badge>
+  //       );
+  //     case 'failed':
+  //       return (
+  //         <Badge className="bg-red-500 hover:bg-red-600">
+  //           <XCircle className="w-3 h-3 mr-1" />
+  //           Failed
+  //         </Badge>
+  //       );
+  //   }
+  // };
 
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return 'N/A';
