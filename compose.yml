@@ -1,13 +1,12 @@
+
 services:
-  app:
+  stars-group-web:
+    container_name: stars-group-web
     build:
       context: .
-      dockerfile: Dockerfile.pnpm
-      args:
-        - VITE_BASE_URL=${VITE_BASE_URL}
+      dockerfile: Dockerfile
+    env_file: ".env"
     restart: unless-stopped
-    env_file: '.env'
-    environment:
-      - VITE_BASE_URL=${VITE_BASE_URL}
     ports:
       - 8284:5000
+
