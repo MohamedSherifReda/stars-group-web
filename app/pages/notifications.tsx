@@ -406,7 +406,7 @@ export default function Notifications() {
       id: 'user',
       header: 'Receiver',
       cell: (notification) => (
-        <span className="font-medium">{notification?.user?.name}</span>
+        <span className="font-medium">{notification?.user?.name || 'N/A'}</span>
       ),
     },
     {
