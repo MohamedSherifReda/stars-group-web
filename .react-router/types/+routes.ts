@@ -34,12 +34,18 @@ type Pages = {
   "/notifications": {
     params: {};
   };
+  "/privacy-policy": {
+    params: {};
+  };
+  "/terms-and-conditions": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/auth/login" | "/auth/forgot-password" | "/dashboard" | "/users" | "/brands" | "/banners" | "/notifications";
+    page: "/" | "/auth/login" | "/auth/forgot-password" | "/dashboard" | "/users" | "/brands" | "/banners" | "/notifications" | "/privacy-policy" | "/terms-and-conditions";
   };
   "pages/index.tsx": {
     id: "pages/index";
@@ -72,5 +78,13 @@ type RouteFiles = {
   "pages/notifications.tsx": {
     id: "pages/notifications";
     page: "/notifications";
+  };
+  "pages/privacy-policy.tsx": {
+    id: "pages/privacy-policy";
+    page: "/privacy-policy";
+  };
+  "pages/terms-conditions.tsx": {
+    id: "pages/terms-conditions";
+    page: "/terms-and-conditions";
   };
 };

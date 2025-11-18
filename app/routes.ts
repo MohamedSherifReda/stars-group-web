@@ -9,4 +9,6 @@ export default [
   route('/brands', 'pages/brands.tsx'),
   route('/banners', 'pages/banners.tsx'),
   route('/notifications', 'pages/notifications.tsx'),
+  route('/privacy-policy', 'pages/privacy-policy.tsx'),
+  route('/terms-and-conditions', 'pages/terms-conditions.tsx'),
 ] satisfies RouteConfig;

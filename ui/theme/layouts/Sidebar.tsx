@@ -1,5 +1,14 @@
 import { Link, useLocation } from 'react-router';
-import { Users, Tag, Image, LayoutDashboard, LogOut, Bell } from 'lucide-react';
+import {
+  Users,
+  Tag,
+  Image,
+  LayoutDashboard,
+  LogOut,
+  Bell,
+  Shield,
+  File,
+} from 'lucide-react';
 import { Button } from '@ui/common/button';
 import { useAuthStore } from 'infrastructure/store/auth';
 
@@ -28,6 +37,16 @@ const sidebarItems = [
     title: 'Notifications',
     href: '/notifications',
     icon: Bell,
+  },
+  {
+    title: 'Privacy Policy',
+    href: '/privacy-policy',
+    icon: Shield,
+  },
+  {
+    title: 'Terms of Service',
+    href: '/terms-and-conditions',
+    icon: File,
   },
 ];
 

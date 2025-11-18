@@ -2,8 +2,16 @@ import { useAuthStore } from 'infrastructure/store/auth';
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { Sidebar } from './Sidebar';
+import PrivacyPolicy from '~/pages/privacy-policy';
+import TermsAndConditions from '~/pages/terms-conditions';
 
-const protectedRoutes = ['/dashboard', '/users', '/brands', '/banners', '/notifications'];
+const protectedRoutes = [
+  '/dashboard',
+  '/users',
+  '/brands',
+  '/banners',
+  '/notifications',
+];
 
 export const isProtectedRoute = (path: string) => {
   return protectedRoutes.includes(path);
@@ -45,6 +53,14 @@ const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!user && isProtectedRoute(currentRoute)) {
     return <Navigate to="/auth/login" replace />;
+  }
+
+  if (currentRoute === '/privacy-policy') {
+    return <PrivacyPolicy />;
+  }
+
+  if (currentRoute === '/terms-and-conditions') {
+    return <TermsAndConditions />;
   }
 
   return children;
