@@ -149,6 +149,7 @@ export default function Notifications() {
   });
 
   const notifications = notificationsResponse?.data || [];
+
   const totalNotifications = notificationsResponse?.meta?.total || 0;
   const totalPages = Math.ceil(totalNotifications / pageSize);
 
