@@ -1,22 +1,10 @@
 import api from '@utils/api';
+import type { ApiResponse } from 'core/types/api.types';
 import type { Brand } from 'core/types/brand.types';
 
 export const brandsApi = {
   getBrands: (params?: Record<string, any>) => {
-    const mockData: Brand[] = [
-      {
-        id: 1,
-        name: 'Brand 1',
-        heading_title: 'Heading 1',
-        description: 'Description 1',
-        gradient_hex: '#000000',
-        updated_at: '2022-01-01T00:00:00.000Z',
-        created_at: '2022-01-01T00:00:00.000Z',
-      },
-    ];
-
-    // api.get<Brand[]>('/brands', { params }),
-    return Promise.resolve({ data: mockData });
+    return api.get<ApiResponse<Brand[]>>('/brands', { params });
   },
 
   getBrand: (id: number, params?: Record<string, any>) =>

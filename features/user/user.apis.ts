@@ -1,6 +1,6 @@
 import api from '@utils/api';
 import type { User } from 'core/types/user.types';
-import type { PaginatedResponse } from 'core/types/api.types';
+import type { ApiResponse, PaginatedResponse } from 'core/types/api.types';
 
 export interface GetUsersParams {
   'pagination[take]'?: number;
@@ -9,7 +9,7 @@ export interface GetUsersParams {
 
 export const usersApi = {
   getUsers: (params?: GetUsersParams) => {
-    return api.get<PaginatedResponse<User>>('/users', {
+    return api.get<ApiResponse<User[]>>('/users', {
       params,
     });
   },

@@ -15,17 +15,26 @@ import serveDashboardMeta from '~/meta/serveDashboardMeta';
 export const meta = serveDashboardMeta;
 
 export default function Dashboard() {
-  const { data: users = [] } = useQuery({
+  const {
+    data: usersData = { data: [], meta: { total: 0, skip: 0, take: 0 } },
+    isLoading: isUsersLoading,
+  } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersApi.getUsers().then((res) => res.data),
   });
 
-  const { data: brands = [] } = useQuery({
+  const {
+    data: brands = { data: [], meta: { total: 0, skip: 0, take: 0 } },
+    isLoading: isBrandsLoading,
+  } = useQuery({
     queryKey: ['brands'],
     queryFn: () => brandsApi.getBrands().then((res) => res.data),
   });
 
-  const { data: banners = [] } = useQuery({
+  const {
+    data: banners = { data: [], meta: { total: 0, skip: 0, take: 0 } },
+    isLoading: isBannersLoading,
+  } = useQuery({
     queryKey: ['banners'],
     queryFn: () => bannersApi.getBanners().then((res) => res.data),
   });
@@ -33,32 +42,32 @@ export default function Dashboard() {
   const stats = [
     {
       title: 'Total Users',
-      value: users.length,
+      value: isUsersLoading ? 'Loading...' : usersData?.meta?.total || 0,
       description: 'Registered users',
       icon: Users,
       color: 'text-blue-600',
     },
     {
       title: 'Active Brands',
-      value: brands.length,
+      value: isBrandsLoading ? 'Loading...' : brands?.meta?.total || 0,
       description: 'Brand partners',
       icon: Tag,
       color: 'text-green-600',
     },
     {
       title: 'Live Banners',
-      value: banners.length,
+      value: isBannersLoading ? 'Loading...' : banners?.meta?.total || 0,
       description: 'Promotional banners',
       icon: Image,
       color: 'text-purple-600',
     },
-    {
-      title: 'Growth Rate',
-      value: '12.5%',
-      description: 'Monthly growth',
-      icon: TrendingUp,
-      color: 'text-orange-600',
-    },
+    // {
+    //   title: 'Growth Rate',
+    //   value: '12.5%',
+    //   description: 'Monthly growth',
+    //   icon: TrendingUp,
+    //   color: 'text-orange-600',
+    // },
   ];
 
   return (
@@ -70,8 +79,12 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${
+          stats?.length || 3
+        } gap-6`}
+      >
+        {stats?.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -89,8 +102,9 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Recent Activity && system stats... */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
             <CardDescription>
@@ -174,7 +188,7 @@ export default function Dashboard() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );
