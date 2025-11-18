@@ -1,0 +1,50 @@
+/* Custom styles for react-phone-number-input to match the design system */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInputInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.PhoneInputInput::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.PhoneInputCountry {
+  margin-right: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInputCountryIcon {
+  width: 1.25rem;
+  height: 1rem;
+  margin-right: 0.25rem;
+}
+
+.PhoneInputCountrySelect {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.PhoneInputCountrySelect:focus {
+  outline: none;
+}
+
+.PhoneInputCountrySelectArrow {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.25rem;
+  color: hsl(var(--muted-foreground));
+}
+

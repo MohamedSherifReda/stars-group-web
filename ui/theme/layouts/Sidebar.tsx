@@ -8,6 +8,7 @@ import {
   Bell,
   Shield,
   File,
+  CircleUserRound,
 } from 'lucide-react';
 import { Button } from '@ui/common/button';
 import { useAuthStore } from 'infrastructure/store/auth';
@@ -47,6 +48,11 @@ const sidebarItems = [
     title: 'Terms of Service',
     href: '/terms-and-conditions',
     icon: File,
+  },
+  {
+    title: 'Contact Us',
+    href: '/contact-us',
+    icon: CircleUserRound,
   },
 ];
 

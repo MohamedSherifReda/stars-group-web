@@ -11,6 +11,7 @@ const protectedRoutes = [
   '/brands',
   '/banners',
   '/notifications',
+  '/contact-us',
 ];
 
 export const isProtectedRoute = (path: string) => {

@@ -7,8 +7,11 @@ const isServer = typeof window === 'undefined';
  * Creates a configured Axios instance with interceptors
  */
 const createApi = (): AxiosInstance => {
+  // Use proxy in development to avoid CORS issues
+  const baseURL = import.meta.env.DEV ? '/api' : import.meta.env.VITE_BASE_URL;
+
   const instance = axios.create({
-    baseURL: import.meta.env.VITE_BASE_URL,
+    baseURL,
     timeout: 10000, // 10 second timeout
     headers: {
       'Content-Type': 'application/json',
