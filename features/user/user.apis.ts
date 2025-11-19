@@ -14,4 +14,6 @@ export const usersApi = {
     });
   },
   getUser: (id: number) => api.get<User>(`/users/${id}`),
+
+  deleteUser: (id: number) => api.delete(`/users/${id}`),
 };
