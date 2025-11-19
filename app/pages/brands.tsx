@@ -1,6 +1,7 @@
 import { brandsApi } from '@features/brand/brand.apis';
 import { mediaApi } from '@features/media/media.apis';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Asterisk from '@ui/common/Asterisk';
 import { Button } from '@ui/common/button';
 import {
   Card,
@@ -57,7 +58,9 @@ export default function Brands() {
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [productFile, setProductFile] = useState<File | null>(null);
-
+  const [logoBackgroundFile, setLogoBackgroundFile] = useState<File | null>(
+    null
+  );
   const queryClient = useQueryClient();
 
   const {
@@ -135,21 +138,29 @@ export default function Brands() {
     try {
       let logoId: number | undefined;
       let productPictureId: number | undefined;
-
+      let logoBackgroundId: number | undefined;
       if (logoFile) {
         const logoResponse = await uploadMutation.mutateAsync(logoFile);
-        logoId = logoResponse.data.id;
+        logoId = logoResponse.data?.data?.id;
       }
 
       if (productFile) {
         const productResponse = await uploadMutation.mutateAsync(productFile);
-        productPictureId = productResponse.data.id;
+        productPictureId = productResponse.data?.data?.id;
+      }
+
+      if (logoBackgroundFile) {
+        const logoBackgroundResponse = await uploadMutation.mutateAsync(
+          logoBackgroundFile
+        );
+        logoBackgroundId = logoBackgroundResponse.data?.data?.id;
       }
 
       const brandData = {
         ...formData,
         ...(logoId && { logo_id: logoId }),
         ...(productPictureId && { product_picture_id: productPictureId }),
+        ...(logoBackgroundId && { background_logo_id: logoBackgroundId }),
         brand_id_brand_translations: [
           {
             description: formData.description,
@@ -220,7 +231,10 @@ export default function Brands() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Brand Name</Label>
+                  <Label htmlFor="name">
+                    Brand Name
+                    <Asterisk />
+                  </Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -231,7 +245,10 @@ export default function Brands() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="heading_title">Heading Title</Label>
+                  <Label htmlFor="heading_title">
+                    Heading Title
+                    <Asterisk />
+                  </Label>
                   <Input
                     id="heading_title"
                     value={formData.heading_title}
@@ -246,7 +263,9 @@ export default function Brands() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">
+                  Description <Asterisk />
+                </Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -261,7 +280,9 @@ export default function Brands() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shop_url">Shop URL</Label>
+                  <Label htmlFor="shop_url">
+                    Shop URL <Asterisk />
+                  </Label>
                   <Input
                     id="shop_url"
                     type="url"
@@ -291,7 +312,9 @@ export default function Brands() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="logo">Logo</Label>
+                  <Label htmlFor="logo">
+                    Logo <Asterisk />
+                  </Label>
                   <Input
                     id="logo"
                     type="file"
@@ -300,13 +323,28 @@ export default function Brands() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="product_picture">Product Picture</Label>
+                  <Label htmlFor="product_picture">
+                    Product Picture <Asterisk />
+                  </Label>
                   <Input
                     id="product_picture"
                     type="file"
                     accept="image/*"
                     onChange={(e) =>
                       setProductFile(e.target.files?.[0] || null)
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="product_picture">
+                    Logo Background Image <Asterisk />
+                  </Label>
+                  <Input
+                    id="logo_background"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setLogoBackgroundFile(e.target.files?.[0] || null)
                     }
                   />
                 </div>
