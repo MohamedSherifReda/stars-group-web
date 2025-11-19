@@ -53,7 +53,10 @@ export default function Banners() {
 
   const queryClient = useQueryClient();
 
-  const { data: banners = [], isLoading } = useQuery({
+  const {
+    data: banners = { data: [], meta: { total: 0, skip: 0, take: 0 } },
+    isLoading: isBannersLoading,
+  } = useQuery({
     queryKey: ['banners'],
     queryFn: () =>
       bannersApi
@@ -273,7 +276,7 @@ export default function Banners() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isBannersLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-gray-500">Loading banners...</div>
             </div>
@@ -288,13 +291,14 @@ export default function Banners() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {banners.map((banner) => (
+                {banners?.data?.map((banner) => (
                   <TableRow key={banner.id}>
                     <TableCell>
                       <div className="flex space-x-2">
                         {banner.image_en?.url ? (
                           <img
-                            src={banner.image_en.url}
+                            crossOrigin="anonymous"
+                            src={banner.image_en.url + banner.image_en.key}
                             alt={`${banner.promotion_name} (EN)`}
                             className="w-16 h-10 object-cover rounded border"
                             title="English"
@@ -306,7 +310,8 @@ export default function Banners() {
                         )}
                         {banner.image_ar?.url ? (
                           <img
-                            src={banner.image_ar.url}
+                            crossOrigin="anonymous"
+                            src={banner.image_ar.url + banner.image_ar.key}
                             alt={`${banner.promotion_name} (AR)`}
                             className="w-16 h-10 object-cover rounded border"
                             title="Arabic"

@@ -11,14 +11,15 @@ export interface LoaderReturnType extends Response {
 }
 
 export interface Media {
-  id: number
-  filename: string
-  original_name: string
-  mime_type: string
-  size: number
-  url: string
-  created_at: string
-  updated_at: string
+  id: number;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  url: string;
+  created_at: string;
+  updated_at: string;
+  key?: string;
 }
 
 export interface ApiResponse<T> {
