@@ -18,59 +18,77 @@ import {
 } from '@ui/common/table';
 import { Badge } from '@ui/common/badge';
 import serveUsersMeta from '~/meta/serveUsersMeta';
-import { DataTable } from '@ui/common/data-table';
+import { DataTable, type ColumnDef } from '@ui/common/data-table';
 
 import type { User } from 'core/types/user.types';
+import { useEffect, useMemo, useState } from 'react';
 
 export const meta = serveUsersMeta;
 
 export default function Users() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const {
     data: users = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isUsersLoading,
   } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => usersApi.getUsers().then((res) => res.data),
+    queryKey: ['users', currentPage, pageSize],
+    queryFn: () =>
+      usersApi
+        .getUsers({
+          'pagination[skip]': (currentPage - 1) * pageSize,
+          'pagination[take]': pageSize,
+        })
+        .then((res) => {
+          return res.data;
+        }),
   });
 
-  const usersCols = [
-    {
-      id: 'id',
-      header: 'ID',
-      cell: (user: User) => <span className="font-mono">{user.id}</span>,
-    },
-    {
-      id: 'name',
-      header: 'Name',
-      cell: (user: User) => <span className="font-medium">{user.name}</span>,
-    },
-    {
-      id: 'email',
-      header: 'Email',
-      cell: (user: User) => (
-        <span className="text-sm text-gray-500">{user.email}</span>
-      ),
-    },
-    {
-      id: 'role',
-      header: 'Role',
-      cell: (user: User) => (
-        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-          {user.role}
-        </Badge>
-      ),
-    },
-    {
-      id: 'verified',
-      header: 'Verified',
-      cell: (user: User) => (
-        <Badge variant={user.account_verified ? 'default' : 'destructive'}>
-          {user.account_verified ? 'Verified' : 'Unverified'}
-        </Badge>
-      ),
-    },
-  ];
+  const usersCols = useMemo(
+    () => [
+      {
+        id: 'id',
+        header: 'ID',
+        cell: (user: User) => <span className="font-mono">{user.id}</span>,
+      },
+      {
+        id: 'name',
+        header: 'Name',
+        cell: (user: User) => (
+          <span className="font-medium">{user.name || 'N/A'}</span>
+        ),
+      },
+      {
+        id: 'email',
+        header: 'Email',
+        cell: (user: User) => (
+          <span className="text-sm text-gray-500">{user.email}</span>
+        ),
+      },
+      {
+        id: 'role',
+        header: 'Role',
+        cell: (user: User) => (
+          <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+            {user.role}
+          </Badge>
+        ),
+      },
+      {
+        id: 'verified',
+        header: 'Verified',
+        cell: (user: User) => (
+          <Badge variant={user.account_verified ? 'default' : 'destructive'}>
+            {user.account_verified ? 'Verified' : 'Unverified'}
+          </Badge>
+        ),
+      },
+    ],
+    []
+  );
   const usersRows = users?.data || [];
+  const totalUsers = users?.meta?.total || 0;
 
   return (
     <div className="space-y-6">
@@ -94,7 +112,19 @@ export default function Users() {
               <div className="text-gray-500">Loading users...</div>
             </div>
           ) : (
-            <DataTable columns={usersCols} data={usersRows} />
+            <DataTable
+              columns={usersCols}
+              data={usersRows}
+              pagination={{
+                pageIndex: currentPage,
+                pageSize: pageSize,
+                totalItems: totalUsers,
+              }}
+              onPaginationChange={(pageIndex, pageSize) => {
+                setCurrentPage(pageIndex);
+                setPageSize(pageSize);
+              }}
+            />
           )}
         </CardContent>
       </Card>
