@@ -46,7 +46,6 @@ export default function Login() {
           },
         }
       );
-      console.log('user profile response', userResponse.data);
       setAuth(userResponse.data, access_token);
       toast.success('Login successful');
     },

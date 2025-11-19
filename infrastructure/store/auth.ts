@@ -1,6 +1,6 @@
 import type { User } from 'core/types/user.types';
 import { create } from 'zustand';
-
+import { jwtDecode } from 'jwt-decode';
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -8,6 +8,7 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   logout: () => void;
   initializeAuth: () => void;
+  checkTokenValidity: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -40,5 +41,18 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ user: null, token: null, isAuthenticated: false });
       }
     }
+  },
+  checkTokenValidity: () => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      const decodedToken = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      if (decodedToken?.exp! < currentTime) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+    return false;
   },
 }));

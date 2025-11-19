@@ -1,6 +1,6 @@
 import { useAuthStore } from 'infrastructure/store/auth';
 import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router';
+import { Navigate, useLocation, useNavigate } from 'react-router';
 import { Sidebar } from './Sidebar';
 import PrivacyPolicy from '~/pages/privacy-policy';
 import TermsAndConditions from '~/pages/terms-conditions';
@@ -23,15 +23,25 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, initializeAuth } = useAuthStore();
+  const { user, initializeAuth, token, checkTokenValidity, logout } =
+    useAuthStore();
   const [loading, setLoading] = useState(true);
-
+  const navigate = useNavigate();
   useEffect(() => {
     initializeAuth();
     setLoading(false);
   }, []);
 
   const currentRoute = useLocation().pathname;
+
+  // if token is expired or does not exist, log the user out and redirect to login page
+  useEffect(() => {
+    const isTokenValid = checkTokenValidity();
+    if (!isTokenValid) {
+      logout();
+      navigate('/auth/login');
+    }
+  }, []);
 
   if (loading) {
     return (
