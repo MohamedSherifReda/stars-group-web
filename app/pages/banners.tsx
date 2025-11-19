@@ -227,6 +227,7 @@ export default function Banners() {
                     }))
                   }
                   placeholder="https://example.com"
+                  required
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -419,6 +420,7 @@ export default function Banners() {
                   }))
                 }
                 placeholder="https://example.com"
+                required
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -431,6 +433,7 @@ export default function Banners() {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImageEnFile(e.target.files?.[0] || null)}
+                  required
                 />
                 {editingBanner?.image_en?.url && (
                   <img
@@ -452,6 +455,7 @@ export default function Banners() {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImageArFile(e.target.files?.[0] || null)}
+                  required
                 />
                 {editingBanner?.image_ar?.url && (
                   <img

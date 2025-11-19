@@ -16,5 +16,5 @@ export const bannersApi = {
   updateBanner: (id: number, banner: Partial<Banner>) =>
     api.patch<Banner>(`/banners/${id}`, banner),
 
-  deleteBanner: (id: number) => api.delete(`/banners/${id}`),
+  deleteBanner: (id: number) => api.delete(`/banners/${id}/soft`),
 };
