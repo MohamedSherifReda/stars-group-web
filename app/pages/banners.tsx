@@ -33,6 +33,7 @@ import {
   TableRow,
 } from '@ui/common/table';
 import serveBannersMeta from '~/meta/serveBannersMeta';
+import Asterisk from '@ui/common/Asterisk';
 
 export const meta = serveBannersMeta;
 
@@ -120,19 +121,18 @@ export default function Banners() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       let imageEnId: number | undefined;
       let imageArId: number | undefined;
 
       if (imageEnFile) {
         const imageEnResponse = await uploadMutation.mutateAsync(imageEnFile);
-        imageEnId = imageEnResponse.data.id;
+        imageEnId = imageEnResponse.data?.data?.id;
       }
 
       if (imageArFile) {
         const imageArResponse = await uploadMutation.mutateAsync(imageArFile);
-        imageArId = imageArResponse.data.id;
+        imageArId = imageArResponse.data?.data?.id;
       }
 
       const bannerData = {
@@ -197,7 +197,9 @@ export default function Banners() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="promotion_name">Promotion Name</Label>
+                <Label htmlFor="promotion_name">
+                  Promotion Name <Asterisk />
+                </Label>
                 <Input
                   id="promotion_name"
                   value={formData.promotion_name}
@@ -211,7 +213,9 @@ export default function Banners() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="redirect_url">Redirect URL (optional)</Label>
+                <Label htmlFor="redirect_url">
+                  Redirect URL <Asterisk />
+                </Label>
                 <Input
                   id="redirect_url"
                   type="url"
@@ -227,7 +231,9 @@ export default function Banners() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="image_en">English Image</Label>
+                  <Label htmlFor="image_en">
+                    English Image <Asterisk />
+                  </Label>
                   <Input
                     id="image_en"
                     type="file"
@@ -239,7 +245,9 @@ export default function Banners() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="image_ar">Arabic Image</Label>
+                  <Label htmlFor="image_ar">
+                    Arabic Image <Asterisk />
+                  </Label>
                   <Input
                     id="image_ar"
                     type="file"
@@ -260,7 +268,9 @@ export default function Banners() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Creating...' : 'Create Banner'}
+                  {createMutation.isPending || uploadMutation.isPending
+                    ? 'Creating...'
+                    : 'Create Banner'}
                 </Button>
               </DialogFooter>
             </form>
@@ -379,7 +389,9 @@ export default function Banners() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit_promotion_name">Promotion Name</Label>
+              <Label htmlFor="edit_promotion_name">
+                Promotion Name <Asterisk />
+              </Label>
               <Input
                 id="edit_promotion_name"
                 value={formData.promotion_name}
@@ -393,7 +405,9 @@ export default function Banners() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_redirect_url">Redirect URL (optional)</Label>
+              <Label htmlFor="edit_redirect_url">
+                Redirect URL <Asterisk />
+              </Label>
               <Input
                 id="edit_redirect_url"
                 type="url"
@@ -409,7 +423,9 @@ export default function Banners() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_image_en">English Image (optional)</Label>
+                <Label htmlFor="edit_image_en">
+                  English Image <Asterisk />
+                </Label>
                 <Input
                   id="edit_image_en"
                   type="file"
@@ -418,14 +434,19 @@ export default function Banners() {
                 />
                 {editingBanner?.image_en?.url && (
                   <img
-                    src={editingBanner.image_en.url}
+                    crossOrigin="anonymous"
+                    src={
+                      editingBanner.image_en.url + editingBanner.image_en.key
+                    }
                     alt="Current English"
                     className="w-full h-20 object-cover rounded border"
                   />
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_image_ar">Arabic Image (optional)</Label>
+                <Label htmlFor="edit_image_ar">
+                  Arabic Image <Asterisk />
+                </Label>
                 <Input
                   id="edit_image_ar"
                   type="file"
@@ -434,7 +455,10 @@ export default function Banners() {
                 />
                 {editingBanner?.image_ar?.url && (
                   <img
-                    src={editingBanner.image_ar.url}
+                    crossOrigin="anonymous"
+                    src={
+                      editingBanner.image_ar.url + editingBanner.image_ar.key
+                    }
                     alt="Current Arabic"
                     className="w-full h-20 object-cover rounded border"
                   />

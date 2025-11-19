@@ -1,11 +1,11 @@
 import api from "@utils/api";
-import type { Media } from "core/types/common.types";
+import type { ApiResponse, Media } from 'core/types/common.types';
 
 export const mediaApi = {
   upload: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post<Media>('/media/upload', formData, {
+    return api.post<ApiResponse<Media>>('/media/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
