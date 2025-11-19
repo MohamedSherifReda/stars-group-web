@@ -15,5 +15,13 @@ export default defineConfig({
   server: {
     host: true,
     port: 3002,
+    proxy: {
+      '/api': {
+        target: 'https://starsgroup.wecodeforyou.io',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
 });

@@ -7,8 +7,13 @@ const isServer = typeof window === 'undefined';
  * Creates a configured Axios instance with interceptors
  */
 const createApi = (): AxiosInstance => {
+  // Use proxy in development to avoid CORS issues
+  // const baseURL = import.meta.env.DEV ? '/api' : import.meta.env.VITE_BASE_URL;
+  // I see the contact-us page is cauding a CORS error in production as well, so I decided to use the proxy in development  & prod as well.
+  const baseURL = '/api';
+
   const instance = axios.create({
-    baseURL: import.meta.env.VITE_BASE_URL,
+    baseURL,
     timeout: 10000, // 10 second timeout
     headers: {
       'Content-Type': 'application/json',
