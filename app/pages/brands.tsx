@@ -60,7 +60,10 @@ export default function Brands() {
 
   const queryClient = useQueryClient();
 
-  const { data: brands = [], isLoading } = useQuery({
+  const {
+    data: brands = { data: [], meta: { total: 0, skip: 0, take: 0 } },
+    isLoading,
+  } = useQuery({
     queryKey: ['brands'],
     queryFn: () =>
       brandsApi
@@ -349,12 +352,13 @@ export default function Brands() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {brands.map((brand) => (
+                {brands?.data?.map((brand) => (
                   <TableRow key={brand.id}>
                     <TableCell>
                       {brand.logo?.url ? (
                         <img
-                          src={brand.logo.url}
+                          src={brand.logo.url + brand.logo?.key}
+                          crossOrigin="anonymous"
                           alt={brand.name}
                           className="w-10 h-10 object-cover rounded"
                         />
