@@ -2,9 +2,7 @@ FROM node:18
 
 WORKDIR /app
 
-ARG VITE_BASE_URL
 
-ENV VITE_BASE_URL=${VITE_BASE_URL}
 
 COPY package*.json ./
 
@@ -17,4 +15,4 @@ COPY . .
 RUN npm run build
 
 EXPOSE 5000
-CMD ["npx", "cross-env", "NODE_ENV=production", "PORT=5000", "react-router-serve", "./build/server/index.js", "--assets-build-directory", "./build/client"]
+CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "5000"]
