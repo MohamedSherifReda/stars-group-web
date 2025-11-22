@@ -25,5 +25,7 @@ jobs:
             git remote set-url origin git@github.com:MohamedSherifReda/stars-group-web.git;
             git stash -u;
             git checkout staging;
-            git pull;
-            docker compose --env-file .env up -d --build --remove-orphans --force-recreate;
+            git fetch --all --prune;
+            git pull --force origin staging;
+            git clean -fd;
+            docker compose up -d --build --remove-orphans;

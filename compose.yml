@@ -4,7 +4,7 @@ services:
     container_name: stars-group-web
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.pnpm
     env_file: ".env"
     restart: unless-stopped
     ports:
