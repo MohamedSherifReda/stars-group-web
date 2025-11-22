@@ -24,4 +24,9 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    allowedHosts: ['cms.starsgroup.wecodeforyou.io'],
+    port: 5000,
+    host: true,
+  },
 });
