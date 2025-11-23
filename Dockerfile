@@ -47,4 +47,4 @@ COPY package.json ./
 EXPOSE 5000
 
 # Start command (for Vite preview)
-CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "5000", "--outDir", "build"]
+CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "5000"]

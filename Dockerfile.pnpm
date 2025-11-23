@@ -21,4 +21,4 @@ RUN pnpm install --prod
 COPY --from=build /app/build /app/build
 
 WORKDIR /app
-CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "5000", "--outDir", "build"]
+CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "5000"]
