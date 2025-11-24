@@ -12,7 +12,6 @@
     "useDefineForClassFields": true,
     "allowJs": true,
     "checkJs": false,
-
     "module": "ES2022",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,

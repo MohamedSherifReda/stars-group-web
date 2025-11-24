@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "react-router typegen && tsc -b && vite build",
     "start:dev": "react-router dev --port 3000",
     "start": "cross-env NODE_ENV=production react-router-serve ./build/server/index.js",
     "start:local": "cross-env NODE_ENV=production PORT=5000 react-router-serve ./build/server/index.js",
