@@ -44,11 +44,11 @@ class DateFormatter {
     const replacements: Record<string, string> = {
       YYYY: date.getFullYear().toString(),
       YY: date.getFullYear().toString().slice(-2),
-      MMMM: DateFormatter.months[date.getMonth()],
-      MMM: DateFormatter.months[date.getMonth()].slice(0, 3),
+      MMMM: DateFormatter.months[date.getMonth()]!,
+      MMM: DateFormatter.months[date.getMonth()]!.slice(0, 3),
       MM: pad(date.getMonth() + 1),
       DD: pad(date.getDate()),
-      dd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()],
+      dd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]!,
       HH: pad(date.getHours()),
       hh: pad(date.getHours() % 12 || 12),
       mm: pad(date.getMinutes()),
@@ -58,7 +58,7 @@ class DateFormatter {
 
     return format.replace(
       /YYYY|YY|MMMM|MMM|MM|DD|dd|HH|hh|mm|ss|a/g,
-      (match) => replacements[match]
+      (match) => replacements[match]!
     );
   }
 

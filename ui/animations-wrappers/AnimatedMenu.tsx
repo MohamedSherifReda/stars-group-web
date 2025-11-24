@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import type { ReactNode } from 'react';
 
 const AnimatedMenu = ({
@@ -12,12 +12,12 @@ const AnimatedMenu = ({
   className?: string;
   from: 'left' | 'right' | 'top' | 'bottom';
 }) => {
-  const menuVariants = {
+  const menuVariants: Variants = {
     open: {
       opacity: 1,
       x: 0,
       y: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 24 },
+      transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
     },
     closed: {
       opacity: 0,
