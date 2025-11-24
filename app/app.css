@@ -30,6 +30,31 @@ body {
     --radius: 0.5rem;
   }
 
+  /* Put this somewhere in your global CSS */
+.rsw-ce b,
+.rsw-ce strong {
+  font-weight: 700;
+}
+
+.rsw-ce i,
+.rsw-ce em {
+  font-style: italic;
+}
+
+.rsw-ce u {
+  text-decoration: underline;
+}
+
+/* If list bullets disappear because of a reset: */
+.rsw-ce ul {
+  list-style: disc;
+  padding-left: 2rem;
+}
+.rsw-ce ol {
+  list-style: decimal;
+  padding-left: 2rem;
+}
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;

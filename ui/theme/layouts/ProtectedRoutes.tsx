@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import PrivacyPolicy from '~/pages/privacy-policy';
 import TermsAndConditions from '~/pages/terms-conditions';
 
+
 const protectedRoutes = [
   '/dashboard',
   '/users',
@@ -12,6 +13,7 @@ const protectedRoutes = [
   '/banners',
   '/notifications',
   '/contact-us',
+  '/settings',
 ];
 
 export const isProtectedRoute = (path: string) => {

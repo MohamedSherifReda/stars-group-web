@@ -9,6 +9,7 @@ import {
   Shield,
   File,
   CircleUserRound,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@ui/common/button';
 import { useAuthStore } from 'infrastructure/store/auth';
@@ -53,6 +54,11 @@ const sidebarItems = [
     title: 'Contact Us',
     href: '/contact-us',
     icon: CircleUserRound,
+  },
+  {
+    title: 'Settings',
+    href: '/settings',
+    icon: Settings,
   },
 ];
 

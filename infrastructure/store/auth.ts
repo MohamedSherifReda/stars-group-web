@@ -9,6 +9,7 @@ interface AuthState {
   logout: () => void;
   initializeAuth: () => void;
   checkTokenValidity: () => boolean;
+  getUserRole: () => string | null;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -54,5 +55,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     }
     return false;
+  },
+
+  getUserRole: () => {
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken) {
+      const decodedToken = jwtDecode<{ role: string }>(authToken);
+      console.log('decodedToken', decodedToken);
+      return decodedToken?.role;
+    }
+    const state = useAuthStore.getState();
+    state?.logout();
+    return null;
   },
 }));
