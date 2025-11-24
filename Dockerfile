@@ -43,8 +43,8 @@ COPY --from=build-env /app/build ./build
 # Copy package.json for runtime context
 COPY package.json ./
 
-# Expose default Vite preview port
+# Expose the application port
 EXPOSE 5000
 
-# Start command (for Vite preview)
-CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "5000"]
+# Start command (for React Router SSR production server)
+CMD ["pnpm", "start"]
