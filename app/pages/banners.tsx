@@ -34,12 +34,22 @@ import {
 } from '@ui/common/table';
 import serveBannersMeta from '~/meta/serveBannersMeta';
 import Asterisk from '@ui/common/Asterisk';
+import { brandsApi } from '@features/brand/brand.apis';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@ui/common/select';
 
 export const meta = serveBannersMeta;
 
 interface BannerFormData {
   promotion_name: string;
   redirect_url: string;
+  brand_id?: string | number | undefined;
 }
 
 export default function Banners() {
@@ -48,10 +58,10 @@ export default function Banners() {
   const [formData, setFormData] = useState<BannerFormData>({
     promotion_name: '',
     redirect_url: '',
+    brand_id: undefined,
   });
   const [imageEnFile, setImageEnFile] = useState<File | null>(null);
   const [imageArFile, setImageArFile] = useState<File | null>(null);
-
   const queryClient = useQueryClient();
 
   const {
@@ -66,6 +76,14 @@ export default function Banners() {
           'relations[image_en]': 'true',
         })
         .then((res) => res.data),
+  });
+
+  const {
+    data: brands = { data: [], meta: { total: 0, skip: 0, take: 0 } },
+    isLoading: isBrandsLoading,
+  } = useQuery({
+    queryKey: ['brands'],
+    queryFn: () => brandsApi.getBrands().then((res) => res.data),
   });
 
   const uploadMutation = useMutation({
@@ -114,6 +132,7 @@ export default function Banners() {
     setFormData({
       promotion_name: '',
       redirect_url: '',
+      brand_id: undefined,
     });
     setImageEnFile(null);
     setImageArFile(null);
@@ -121,6 +140,7 @@ export default function Banners() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       let imageEnId: number | undefined;
       let imageArId: number | undefined;
@@ -139,6 +159,9 @@ export default function Banners() {
         ...formData,
         ...(imageEnId && { image_en_id: imageEnId }),
         ...(imageArId && { image_ar_id: imageArId }),
+        ...(formData.brand_id && {
+          brand_id: parseInt(formData.brand_id as string),
+        }),
       };
 
       if (editingBanner) {
@@ -148,6 +171,8 @@ export default function Banners() {
       }
     } catch (error) {
       toast.error('Failed to upload files');
+    } finally {
+      resetForm();
     }
   };
 
@@ -212,23 +237,55 @@ export default function Banners() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="redirect_url">
-                  Redirect URL <Asterisk />
-                </Label>
-                <Input
-                  id="redirect_url"
-                  type="url"
-                  value={formData.redirect_url}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      redirect_url: e.target.value,
-                    }))
-                  }
-                  placeholder="https://example.com"
-                  required
-                />
+              <div className=" grid grid-cols-2 gap-x-4">
+                <div>
+                  <Label htmlFor="redirect_url">
+                    Redirect URL <Asterisk />
+                  </Label>
+                  <Input
+                    id="redirect_url"
+                    type="url"
+                    value={formData.redirect_url}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        redirect_url: e.target.value,
+                      }))
+                    }
+                    placeholder="https://example.com"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="brand_id">Brand (Optional)</Label>
+                  <Select
+                    value={formData.brand_id?.toString() ?? ''}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        brand_id: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Attach it to a brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {brands?.data?.map((brand) => {
+                          return (
+                            <SelectItem
+                              key={brand?.id}
+                              value={brand?.id?.toString()}
+                            >
+                              {brand?.name}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -268,7 +325,12 @@ export default function Banners() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={
+                    createMutation.isPending || uploadMutation.isPending
+                  }
+                >
                   {createMutation.isPending || uploadMutation.isPending
                     ? 'Creating...'
                     : 'Create Banner'}
@@ -477,8 +539,13 @@ export default function Banners() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'Updating...' : 'Update Banner'}
+              <Button
+                type="submit"
+                disabled={updateMutation.isPending || uploadMutation.isPending}
+              >
+                {updateMutation.isPending || uploadMutation.isPending
+                  ? 'Updating...'
+                  : 'Update Banner'}
               </Button>
             </DialogFooter>
           </form>

@@ -76,6 +76,7 @@ export default function Brands() {
         .getBrands({
           'relations[logo]': 'true',
           'relations[product_picture]': 'true',
+          'relations[background_logo]': 'true',
           'relations[banners]': 'true',
           'orders[display_order]': 'asc',
           'pagination[take]': pageSize,
@@ -521,7 +522,11 @@ export default function Brands() {
                     id="logo"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                    onChange={(e) => {
+                      console.log('logo file', e.target.files?.[0]);
+                      setLogoFile(e.target.files?.[0] || null);
+                      5;
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
