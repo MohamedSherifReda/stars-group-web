@@ -182,7 +182,9 @@ export default function Banners() {
     setFormData({
       promotion_name: banner.promotion_name,
       redirect_url: banner.redirect_url || '',
+      brand_id: banner.brand_id?.toString() ?? undefined,
     });
+    console.log('the banner', banner);
   };
 
   const handleDelete = (id: number) => {
@@ -191,6 +193,7 @@ export default function Banners() {
     }
   };
 
+  console.log('the form data', formData);
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -467,23 +470,57 @@ export default function Banners() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit_redirect_url">
-                Redirect URL <Asterisk />
-              </Label>
-              <Input
-                id="edit_redirect_url"
-                type="url"
-                value={formData.redirect_url}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    redirect_url: e.target.value,
-                  }))
-                }
-                placeholder="https://example.com"
-                required
-              />
+            <div className=" grid grid-cols-2 gap-x-4">
+              <div>
+                <Label htmlFor="edit_redirect_url">
+                  Redirect URL <Asterisk />
+                </Label>
+                <Input
+                  id="edit_redirect_url"
+                  type="url"
+                  value={formData.redirect_url}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      redirect_url: e.target.value,
+                    }))
+                  }
+                  placeholder="https://example.com"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="brand_id">Brand (Optional)</Label>
+                <Select
+                  value={formData.brand_id?.toString() ?? ''}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      brand_id: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Attach it to a brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup
+                      defaultValue={formData.brand_id?.toString() ?? ''}
+                    >
+                      {brands?.data?.map((brand) => {
+                        return (
+                          <SelectItem
+                            key={brand?.id}
+                            value={brand?.id?.toString()}
+                          >
+                            {brand?.name}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -495,7 +532,6 @@ export default function Banners() {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImageEnFile(e.target.files?.[0] || null)}
-                  required
                 />
                 {editingBanner?.image_en?.url && (
                   <img
@@ -517,7 +553,6 @@ export default function Banners() {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImageArFile(e.target.files?.[0] || null)}
-                  required
                 />
                 {editingBanner?.image_ar?.url && (
                   <img
