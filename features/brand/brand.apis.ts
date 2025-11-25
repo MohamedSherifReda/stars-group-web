@@ -16,4 +16,8 @@ export const brandsApi = {
     api.patch<Brand>(`/brands/${id}`, brand),
 
   deleteBrand: (id: number) => api.delete(`/brands/${id}/soft`),
+
+  reorderBrands: (payload: {
+    brands: { id: number; display_order: number }[];
+  }) => api.put('/brands/reorder', payload),
 };

@@ -21,18 +21,11 @@ import {
 } from '@ui/common/dialog';
 import { Input } from '@ui/common/input';
 import { Label } from '@ui/common/label';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@ui/common/table';
 import { Textarea } from '@ui/common/textarea';
+import { DataTable, type ColumnDef } from '@ui/common/data-table';
 import type { Brand } from 'core/types/brand.types';
-import { Edit, Image, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Edit, Image, LoaderCircle, Plus, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import serveBrandsMeta from '~/meta/serveBrandsMeta';
 
@@ -44,36 +37,49 @@ interface BrandFormData {
   description: string;
   shop_url: string;
   gradient_hex: string;
+  display_order: string;
 }
 
 export default function Brands() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [editingDisplayOrderId, setEditingDisplayOrderId] = useState<
+    number | null
+  >(null);
+  const [editingDisplayOrderValue, setEditingDisplayOrderValue] =
+    useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [formData, setFormData] = useState<BrandFormData>({
     name: '',
     heading_title: '',
     description: '',
     shop_url: '',
     gradient_hex: '#000000',
+    display_order: '',
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [productFile, setProductFile] = useState<File | null>(null);
   const [logoBackgroundFile, setLogoBackgroundFile] = useState<File | null>(
     null
   );
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   const queryClient = useQueryClient();
 
   const {
     data: brands = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading,
   } = useQuery({
-    queryKey: ['brands'],
+    queryKey: ['brands', currentPage, pageSize],
     queryFn: () =>
       brandsApi
         .getBrands({
           'relations[logo]': 'true',
           'relations[product_picture]': 'true',
           'relations[banners]': 'true',
+          'orders[display_order]': 'asc',
+          'pagination[take]': pageSize,
+          'pagination[skip]': (currentPage - 1) * pageSize,
         })
         .then((res) => res.data),
   });
@@ -109,6 +115,29 @@ export default function Brands() {
     },
   });
 
+  const updateDisplayOrderMutation = useMutation({
+    mutationFn: ({
+      id,
+      display_order,
+    }: {
+      id: number;
+      display_order: number;
+    }) =>
+      brandsApi.reorderBrands({
+        brands: [{ id, display_order }],
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      setEditingDisplayOrderId(null);
+      toast.success('Display order updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || 'Failed to update display order'
+      );
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: number) => brandsApi.deleteBrand(id),
     onSuccess: () => {
@@ -127,6 +156,7 @@ export default function Brands() {
       description: '',
       shop_url: '',
       gradient_hex: '#000000',
+      display_order: '',
     });
     setLogoFile(null);
     setProductFile(null);
@@ -135,6 +165,7 @@ export default function Brands() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    setIsSubmittingForm(true);
     try {
       let logoId: number | undefined;
       let productPictureId: number | undefined;
@@ -156,11 +187,36 @@ export default function Brands() {
         logoBackgroundId = logoBackgroundResponse.data?.data?.id;
       }
 
-      const brandData = {
+      const totalBrands = brands?.meta?.total ?? brands?.data?.length ?? 0;
+
+      let displayOrderValue: number | undefined;
+      if (formData.display_order !== '') {
+        const parsed = Number(formData.display_order);
+
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          toast.error('Display order must be a non-negative number');
+          return;
+        }
+
+        const maxOrderForCreate = totalBrands + 1;
+        if (parsed > maxOrderForCreate) {
+          toast.error(
+            `Display order cannot be greater than ${maxOrderForCreate} for a new brand`
+          );
+          return;
+        }
+
+        displayOrderValue = parsed;
+      }
+
+      const brandData: any = {
         ...formData,
         ...(logoId && { logo_id: logoId }),
         ...(productPictureId && { product_picture_id: productPictureId }),
         ...(logoBackgroundId && { background_logo_id: logoBackgroundId }),
+        ...(displayOrderValue !== undefined && {
+          display_order: displayOrderValue,
+        }),
         brand_id_brand_translations: [
           {
             description: formData.description,
@@ -178,6 +234,8 @@ export default function Brands() {
       }
     } catch (error) {
       toast.error('Failed to upload files');
+    } finally {
+      setIsSubmittingForm(false);
     }
   };
 
@@ -190,6 +248,7 @@ export default function Brands() {
       description: brand.description,
       shop_url: brand.shop_url || '',
       gradient_hex: brand.gradient_hex,
+      display_order: String(brand.display_order ?? ''),
     });
   };
 
@@ -199,6 +258,148 @@ export default function Brands() {
     }
   };
 
+  const startEditingDisplayOrder = (brand: Brand) => {
+    setEditingDisplayOrderId(brand.id);
+    setEditingDisplayOrderValue(String(brand.display_order ?? ''));
+  };
+
+  const commitDisplayOrderChange = (brand: Brand) => {
+    const value = Number(editingDisplayOrderValue);
+
+    if (!Number.isFinite(value)) {
+      toast.error('Please enter a valid number for display order');
+      return;
+    }
+
+    if (value < 0) {
+      toast.error('Display order cannot be negative');
+      return;
+    }
+
+    const totalBrands = brands?.meta?.total ?? brands?.data?.length ?? 0;
+
+    if (value > totalBrands) {
+      toast.error(
+        `Display order cannot be greater than the total number of brands (${totalBrands})`
+      );
+      return;
+    }
+
+    if (value === brand.display_order) {
+      setEditingDisplayOrderId(null);
+      return;
+    }
+
+    updateDisplayOrderMutation.mutate({ id: brand.id, display_order: value });
+  };
+
+  const columns: ColumnDef<Brand>[] = [
+    {
+      id: 'logo',
+      header: 'Logo',
+      cell: (brand) =>
+        brand.logo?.url ? (
+          <img
+            src={brand.logo.url + brand.logo?.key}
+            crossOrigin="anonymous"
+            alt={brand.name}
+            className="w-10 h-10 object-cover rounded"
+          />
+        ) : (
+          <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+            <Image className="w-4 h-4 text-gray-400" />
+          </div>
+        ),
+    },
+    {
+      id: 'name',
+      header: 'Name',
+      cell: (brand) => <span className="font-medium">{brand.name}</span>,
+    },
+    {
+      id: 'description',
+      header: 'Description',
+      cell: (brand) => (
+        <span className="line-clamp-1">{brand.description}</span>
+      ),
+      className: 'max-w-xs',
+    },
+    {
+      id: 'shop_url',
+      header: 'Shop URL',
+      cell: (brand) =>
+        brand.shop_url ? (
+          <a
+            href={brand.shop_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            Visit Shop
+          </a>
+        ) : (
+          <span className="text-gray-400">No URL</span>
+        ),
+    },
+    {
+      id: 'display_order',
+      header: 'Display Order (Double Click to Edit)',
+      cell: (brand) => (
+        <div
+          className="text-gray-400"
+          onDoubleClick={() => startEditingDisplayOrder(brand)}
+        >
+          {editingDisplayOrderId === brand.id ? (
+            <Input
+              type="number"
+              min={0}
+              max={brands?.meta?.total ?? undefined}
+              value={editingDisplayOrderValue}
+              onChange={(e) => setEditingDisplayOrderValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  commitDisplayOrderChange(brand);
+                } else if (e.key === 'Escape') {
+                  setEditingDisplayOrderId(null);
+                }
+              }}
+              autoFocus
+              className="w-20"
+            />
+          ) : (
+            <p className="flex items-center justify-center  w-1/2">
+              {brand.display_order}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (brand) => (
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDelete(brand.id)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleEdit(brand)}>
+            <Edit className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const totalBrands = brands?.meta?.total ?? brands?.data?.length ?? 0;
+
+  const sortedBrands = useMemo(() => {
+    const list = brands?.data ?? [];
+    return [...list].sort((a, b) => a?.display_order - b?.display_order);
+  }, [brands?.data]);
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -262,6 +463,7 @@ export default function Brands() {
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="description">
                   Description <Asterisk />
@@ -348,7 +550,31 @@ export default function Brands() {
                     }
                   />
                 </div>
+                {/* Display Order */}
+                <div className="space-y-2">
+                  <Label htmlFor="display_order">
+                    Display Order (optional)
+                  </Label>
+                  <Input
+                    id="display_order"
+                    type="number"
+                    min={0}
+                    max={(brands?.meta?.total ?? brands?.data?.length ?? 0) + 1}
+                    value={formData.display_order}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        display_order: e.target.value,
+                      }))
+                    }
+                  />
+                  {/* <p className="text-xs text-gray-500">
+                    Leave empty to let the system assign the next available
+                    order.
+                  </p> */}
+                </div>
               </div>
+
               <DialogFooter>
                 <Button
                   type="button"
@@ -357,8 +583,18 @@ export default function Brands() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Creating...' : 'Create Brand'}
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending || isSubmittingForm}
+                >
+                  {createMutation.isPending || isSubmittingForm ? (
+                    <>
+                      <LoaderCircle className="animate-spin " />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Brand'
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -374,79 +610,20 @@ export default function Brands() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500">Loading brands...</div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Logo</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Shop URL</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {brands?.data?.map((brand) => (
-                  <TableRow key={brand.id}>
-                    <TableCell>
-                      {brand.logo?.url ? (
-                        <img
-                          src={brand.logo.url + brand.logo?.key}
-                          crossOrigin="anonymous"
-                          alt={brand.name}
-                          className="w-10 h-10 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                          <Image className="w-4 h-4 text-gray-400" />
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{brand.name}</TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {brand.description}
-                    </TableCell>
-                    <TableCell>
-                      {brand.shop_url ? (
-                        <a
-                          href={brand.shop_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Visit Shop
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">No URL</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(brand.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(brand)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable<Brand>
+            columns={columns}
+            data={sortedBrands}
+            pagination={{
+              pageIndex: currentPage,
+              pageSize,
+              totalItems: totalBrands,
+            }}
+            onPaginationChange={(pageIndex, pageSize) => {
+              setCurrentPage(pageIndex);
+              setPageSize(pageSize);
+            }}
+            isLoading={isLoading}
+          />
         </CardContent>
       </Card>
 
