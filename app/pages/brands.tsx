@@ -28,6 +28,16 @@ import { Edit, Image, LoaderCircle, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import serveBrandsMeta from '~/meta/serveBrandsMeta';
+import { bannersApi } from '@features/banner/banner.apis';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@ui/common/select';
+import { MultiSelectInput } from '@ui/common/MultiSelectInput';
+import type { Banner } from 'core/types/banner.types';
 
 export const meta = serveBrandsMeta;
 
@@ -37,7 +47,8 @@ interface BrandFormData {
   description: string;
   shop_url: string;
   gradient_hex: string;
-  display_order: string;
+  display_order: string | undefined;
+  banners?: string[] | number[] | undefined | Banner[];
 }
 
 export default function Brands() {
@@ -81,6 +92,21 @@ export default function Brands() {
           'orders[display_order]': 'asc',
           'pagination[take]': pageSize,
           'pagination[skip]': (currentPage - 1) * pageSize,
+        })
+        .then((res) => res.data),
+  });
+
+  const {
+    data: banners = { data: [], meta: { total: 0, skip: 0, take: 0 } },
+    isLoading: isBannersLoading,
+  } = useQuery({
+    queryKey: ['banners'],
+    queryFn: () =>
+      bannersApi
+        .getBanners({
+          'relations[image_ar]': 'true',
+          'relations[image_en]': 'true',
+          'relations[brand]': 'true',
         })
         .then((res) => res.data),
   });
@@ -208,6 +234,9 @@ export default function Brands() {
         }
 
         displayOrderValue = parsed;
+      } else {
+        formData.display_order = undefined;
+        displayOrderValue = undefined;
       }
 
       const brandData: any = {
@@ -215,9 +244,19 @@ export default function Brands() {
         ...(logoId && { logo_id: logoId }),
         ...(productPictureId && { product_picture_id: productPictureId }),
         ...(logoBackgroundId && { background_logo_id: logoBackgroundId }),
-        ...(displayOrderValue !== undefined && {
-          display_order: displayOrderValue,
-        }),
+        ...(displayOrderValue &&
+        typeof displayOrderValue === 'number' &&
+        displayOrderValue > 0
+          ? {
+              display_order: displayOrderValue,
+            }
+          : {}),
+        ...(formData?.banners &&
+          formData.banners.length > 0 && {
+            banners: formData.banners.map((banner) => ({
+              id: parseInt(banner as string),
+            })),
+          }),
         brand_id_brand_translations: [
           {
             description: formData.description,
@@ -250,6 +289,7 @@ export default function Brands() {
       shop_url: brand.shop_url || '',
       gradient_hex: brand.gradient_hex,
       display_order: String(brand.display_order ?? ''),
+      banners: brand.banners?.map((banner) => banner.id?.toString()) ?? [],
     });
   };
 
@@ -374,6 +414,21 @@ export default function Brands() {
           )}
         </div>
       ),
+    },
+    {
+      id: 'banner',
+      header: 'Banner',
+      cell: (brand: Brand) => (
+        <span className="line-clamp-1 w-fit">
+          {brand.banners
+            ?.map(
+              (banner: Banner | number | string) =>
+                (banner as Banner)?.promotion_name
+            )
+            .join(' - ') || 'N/A'}
+        </span>
+      ),
+      className: 'w-fit',
     },
     {
       id: 'actions',
@@ -543,7 +598,7 @@ export default function Brands() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="product_picture">
+                  <Label htmlFor="logo_background">
                     Logo Background Image <Asterisk />
                   </Label>
                   <Input
@@ -561,6 +616,7 @@ export default function Brands() {
                     Display Order (optional)
                   </Label>
                   <Input
+                    defaultValue={String(brands?.meta?.total! + 1)}
                     id="display_order"
                     type="number"
                     min={0}
@@ -578,8 +634,29 @@ export default function Brands() {
                     order.
                   </p> */}
                 </div>
+                {/* Banner */}
+                <div className="space-y-2">
+                  <Label htmlFor="banner_id">Banner (Optional)</Label>
+                  <MultiSelectInput
+                    options={
+                      banners?.data?.map((banner) => ({
+                        label: banner.promotion_name,
+                        value: banner.id.toString(),
+                      })) ?? []
+                    }
+                    value={(formData.banners as string[]) ?? []}
+                    onChange={(value) => {
+                      console.log('value', value);
+                      setFormData((prev) => ({
+                        ...prev,
+                        banners: value,
+                      }));
+                    }}
+                  />
+                </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4"></div>
               <DialogFooter>
                 <Button
                   type="button"
@@ -732,7 +809,42 @@ export default function Brands() {
                   onChange={(e) => setProductFile(e.target.files?.[0] || null)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="logo_background">
+                  Logo Background Image <Asterisk />
+                </Label>
+                <Input
+                  id="logo_background"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setLogoBackgroundFile(e.target.files?.[0] || null)
+                  }
+                />
+              </div>
+              {/* Banner  (Edit)*/}
+              {/* {
+                <div className="space-y-2">
+                  <Label htmlFor="banner_id">Banner</Label>
+                  <MultiSelectInput
+                    options={
+                      banners?.data?.map((banner) => ({
+                        label: banner.promotion_name,
+                        value: banner.id.toString(),
+                      })) ?? []
+                    }
+                    value={formData.banners as string[]}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        banners: value,
+                      }))
+                    }
+                  />
+                </div>
+              } */}
             </div>
+
             <DialogFooter>
               <Button
                 type="button"
