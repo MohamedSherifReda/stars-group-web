@@ -289,7 +289,10 @@ export default function Brands() {
       shop_url: brand.shop_url || '',
       gradient_hex: brand.gradient_hex,
       display_order: String(brand.display_order ?? ''),
-      banners: brand.banners?.map((banner) => banner.id?.toString()) ?? [],
+      banners:
+        brand.banners?.map((banner: Banner | number | string) =>
+          (banner as Banner)?.id?.toString()
+        ) ?? [],
     });
   };
 
