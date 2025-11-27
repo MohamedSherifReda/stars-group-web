@@ -1,10 +1,11 @@
-
 services:
   stars-group-web:
     container_name: stars-group-web
     build:
       context: .
       dockerfile: Dockerfile.pnpm
+      args:
+        CACHE_BUST: ${CACHE_BUST:-$(date +%s)}
     env_file: ".env"
     restart: unless-stopped
     ports:
