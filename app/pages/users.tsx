@@ -19,6 +19,7 @@ import { queryClient } from '@utils/queryClient';
 import toast from 'react-hot-toast';
 import { Button } from '@ui/common/button';
 import { Trash2 } from 'lucide-react';
+import { cn } from '@utils/cn';
 
 export const meta = serveUsersMeta;
 
@@ -79,8 +80,22 @@ export default function Users() {
         id: 'role',
         header: 'Role',
         cell: (user: User) => (
-          <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+          <Badge
+            className={cn(user.role === 'admin' && 'hover:text-black')}
+            variant={user.role === 'admin' ? 'default' : 'secondary'}
+          >
             {user.role}
+          </Badge>
+        ),
+      },
+      {
+        id: 'rank_string',
+        header: 'Membership',
+        cell: (user: User) => (
+          <Badge
+            variant={user.rank_string === 'gold' ? 'default' : 'secondary'}
+          >
+            <span className="text-uppercase">{user.rank_string || 'N/A'}</span>
           </Badge>
         ),
       },
@@ -88,7 +103,10 @@ export default function Users() {
         id: 'verified',
         header: 'Verified',
         cell: (user: User) => (
-          <Badge variant={user.account_verified ? 'default' : 'destructive'}>
+          <Badge
+            className={cn(user.account_verified && 'hover:text-black')}
+            variant={user.account_verified ? 'default' : 'destructive'}
+          >
             {user.account_verified ? 'Verified' : 'Unverified'}
           </Badge>
         ),

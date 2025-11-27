@@ -1,12 +1,14 @@
 export interface User {
-  id: number
-  email: string
-  name: string
-  phone_number: string
-  role: string
-  account_verified: boolean
-  created_at: string
-  updated_at: string
+  id: number;
+  email: string;
+  name: string;
+  phone_number: string;
+  role: string;
+  account_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  rank: number;
+  rank_string: string;
 }
 
 export interface AuthResponse {
