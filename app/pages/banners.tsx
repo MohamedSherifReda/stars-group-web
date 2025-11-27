@@ -74,6 +74,7 @@ export default function Banners() {
         .getBanners({
           'relations[image_ar]': 'true',
           'relations[image_en]': 'true',
+          'relations[brand]': 'true',
         })
         .then((res) => res.data),
   });

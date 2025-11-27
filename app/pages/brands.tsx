@@ -826,7 +826,7 @@ export default function Brands() {
                 />
               </div>
               {/* Banner  (Edit)*/}
-              {/* {
+              {
                 <div className="space-y-2">
                   <Label htmlFor="banner_id">Banner</Label>
                   <MultiSelectInput
@@ -845,7 +845,7 @@ export default function Brands() {
                     }
                   />
                 </div>
-              } */}
+              }
             </div>
 
             <DialogFooter>
