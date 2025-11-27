@@ -76,7 +76,7 @@ export default function Banners() {
           'relations[image_ar]': true,
           'relations[image_en]': true,
           'relations[brand]': true,
-          'relations[includeAllBranded]': true,
+          includeAllBranded: true,
         })
         .then((res) => res.data),
   });
