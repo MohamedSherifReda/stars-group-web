@@ -8,7 +8,7 @@ const isServer = typeof window === 'undefined';
  */
 const createApi = (): AxiosInstance => {
   // Use proxy in development to avoid CORS issues
-  const baseURL = import.meta.env.VITE_BASE_URL || '/api';
+  const baseURL = import.meta.env.VITE_BASE_URL || "https://starsgroup.wecodeforyou.io/";
 
   const instance = axios.create({
     baseURL,
