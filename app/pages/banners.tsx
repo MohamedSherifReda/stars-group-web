@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ui/common/select';
+import { Toggle } from '~/components/ui/toggle';
 
 export const meta = serveBannersMeta;
 
@@ -72,9 +73,10 @@ export default function Banners() {
     queryFn: () =>
       bannersApi
         .getBanners({
-          'relations[image_ar]': 'true',
-          'relations[image_en]': 'true',
-          'relations[brand]': 'true',
+          'relations[image_ar]': true,
+          'relations[image_en]': true,
+          'relations[brand]': true,
+          'relations[includeAllBranded]': true,
         })
         .then((res) => res.data),
   });
@@ -363,6 +365,7 @@ export default function Banners() {
                   <TableHead>Images</TableHead>
                   <TableHead>Promotion Name</TableHead>
                   <TableHead>Redirect URL</TableHead>
+                  <TableHead>Visibility</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -416,6 +419,25 @@ export default function Banners() {
                       ) : (
                         <span className="text-gray-400">No redirect</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <Toggle
+                        pressed={!banner.disabled}
+                        onPressedChange={() =>
+                          updateMutation.mutate({
+                            id: banner.id,
+                            banner: { disabled: !banner.disabled },
+                          })
+                        }
+                        aria-label={
+                          banner.disabled
+                            ? 'Enable banner visibility'
+                            : 'Disable banner visibility'
+                        }
+                        disabled={updateMutation.isPending}
+                      >
+                        {banner.disabled ? 'Disabled' : 'Active'}
+                      </Toggle>
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
