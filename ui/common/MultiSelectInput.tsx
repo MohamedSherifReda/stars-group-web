@@ -53,8 +53,9 @@ export function MultiSelectInput({
     onChange(value.filter((item) => item !== v));
   };
 
+
+  console.log('value', value);
   console.log('options', options);
-console.log('value', value);
   return (
     <div className={cn('w-full', className)}>
       <Popover open={open} onOpenChange={setOpen}>
@@ -66,10 +67,10 @@ console.log('value', value);
             disabled={disabled}
             className={cn(
               'w-full justify-between',
-              value.length > 0 && 'h-auto py-2'
+              value?.length > 0 && 'h-auto py-2'
             )}
           >
-            {value.length === 0 ? (
+            {value?.length === 0 ? (
               <span className="text-muted-foreground">{placeholder}</span>
             ) : (
               <div className="flex flex-wrap gap-1">
@@ -111,20 +112,26 @@ console.log('value', value);
               <CommandEmpty>No results found.</CommandEmpty>
 
               <CommandGroup>
-                { options?.length > 0 ? options?.map((opt) => (
-                  <CommandItem
-                    key={opt.value}
-                    onSelect={() => toggleValue(opt.value)}
-                  >
-                    <Check
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        value.includes(opt.value) ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-                    {opt.label}
-                  </CommandItem>
-                )): <CommandItem>No results found.</CommandItem>}
+                {options?.length > 0 ? (
+                  options?.map((opt) => (
+                    <CommandItem
+                      key={opt.value}
+                      onSelect={() => toggleValue(opt.value)}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          value.includes(opt.value)
+                            ? 'opacity-100'
+                            : 'opacity-0'
+                        )}
+                      />
+                      {opt.label}
+                    </CommandItem>
+                  ))
+                ) : (
+                  <CommandItem>No results found.</CommandItem>
+                )}
               </CommandGroup>
             </CommandList>
           </Command>

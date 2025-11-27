@@ -107,6 +107,7 @@ export default function Brands() {
           'relations[image_ar]': 'true',
           'relations[image_en]': 'true',
           'relations[brand]': 'true',
+          includeAllBranded: true,
         })
         .then((res) => res.data),
   });
@@ -642,10 +643,14 @@ export default function Brands() {
                   <Label htmlFor="banner_id">Banner (Optional)</Label>
                   <MultiSelectInput
                     options={
-                      banners?.data?.map((banner) => ({
-                        label: banner.promotion_name,
-                        value: banner.id.toString(),
-                      })) ?? []
+                      banners?.data
+                        ?.filter((banner) => {
+                          return !banner.brand_id;
+                        })
+                        ?.map((banner) => ({
+                          label: banner.promotion_name,
+                          value: banner.id.toString(),
+                        })) ?? []
                     }
                     value={(formData.banners as string[]) ?? []}
                     onChange={(value) => {
@@ -831,10 +836,17 @@ export default function Brands() {
                   <Label htmlFor="banner_id">Banner</Label>
                   <MultiSelectInput
                     options={
-                      banners?.data?.map((banner) => ({
-                        label: banner.promotion_name,
-                        value: banner.id.toString(),
-                      })) ?? []
+                      banners?.data
+                        ?.filter((banner) => {
+                          return (
+                            !banner.brand_id ||
+                            banner.brand_id === editingBrand?.id
+                          );
+                        })
+                        ?.map((banner) => ({
+                          label: banner.promotion_name,
+                          value: banner.id.toString(),
+                        })) ?? []
                     }
                     value={formData.banners as string[]}
                     onChange={(value) =>
