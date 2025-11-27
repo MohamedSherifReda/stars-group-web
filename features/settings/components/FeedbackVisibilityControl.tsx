@@ -8,10 +8,7 @@ import { Skeleton } from '@ui/common/skeleton';
 import { settingsApi } from '@features/settings/settings.apis';
 import type { FeedbackUIConfigUpdatePayload } from '@features/settings/settings.apis';
 import toast from 'react-hot-toast';
-import { safeStorage } from '@utils/storageHelper';
 import { useAuthStore } from 'infrastructure/store/auth';
-
-const FEEDBACK_FORM_URL_STORAGE_KEY = 'feedback_form_url';
 
 const FeedbackVisibilityControl: React.FC = () => {
   const queryClient = useQueryClient();
@@ -28,8 +25,7 @@ const FeedbackVisibilityControl: React.FC = () => {
     isError,
   } = useQuery({
     queryKey: ['user-profile-ui-config'],
-    queryFn: () =>
-      settingsApi.getUserProfileUIConfig().then((res) => res.data),
+    queryFn: () => settingsApi.getUserProfileUIConfig().then((res) => res.data),
   });
 
   useEffect(() => {
@@ -40,16 +36,11 @@ const FeedbackVisibilityControl: React.FC = () => {
       setHomeVisible(
         !!configResponse.data.feedback_button_home_visibility?.value
       );
+      if (configResponse.data.feedback_url?.value) {
+        setFeedbackFormUrl(configResponse.data.feedback_url.value);
+      }
     }
   }, [configResponse]);
-
-  useEffect(() => {
-    const storedUrl = safeStorage.get<string>(
-      FEEDBACK_FORM_URL_STORAGE_KEY,
-      ''
-    );
-    setFeedbackFormUrl(storedUrl || '');
-  }, []);
 
   const updateMutation = useMutation({
     mutationFn: (payload: FeedbackUIConfigUpdatePayload) =>
@@ -74,14 +65,10 @@ const FeedbackVisibilityControl: React.FC = () => {
     const payload: FeedbackUIConfigUpdatePayload = {
       feedback_button_chat_visibility: chatVisible,
       feedback_button_home_visibility: homeVisible,
+      feedback_url: feedbackFormUrl || null,
     };
 
     updateMutation.mutate(payload);
-    safeStorage.set(FEEDBACK_FORM_URL_STORAGE_KEY, feedbackFormUrl);
-
-    if (!updateMutation.isPending) {
-      toast.success('Feedback form URL saved locally (backend not yet enabled)');
-    }
   };
 
   const isDisabled =
@@ -173,8 +160,8 @@ const FeedbackVisibilityControl: React.FC = () => {
                 />
                 <p className="text-xs text-gray-500">
                   This URL will be used in the mobile app to open the form that
-                  collects user feedback. It is currently stored locally in the
-                  CMS until backend support is available.
+                  collects user feedback. It is stored in the backend as part of
+                  the user profile UI configuration.
                 </p>
               </div>
 
