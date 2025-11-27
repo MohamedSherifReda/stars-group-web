@@ -217,9 +217,10 @@ export default function Brands() {
 
       const totalBrands = brands?.meta?.total ?? brands?.data?.length ?? 0;
 
-      let displayOrderValue: number | undefined;
-      if (formData.display_order !== '') {
-        const parsed = Number(formData.display_order);
+      let displayOrderValue: string | number | undefined =
+        formData.display_order;
+      if (displayOrderValue && displayOrderValue !== '') {
+        const parsed = Number(displayOrderValue);
 
         if (!Number.isFinite(parsed) || parsed < 0) {
           toast.error('Display order must be a non-negative number');
@@ -236,10 +237,14 @@ export default function Brands() {
 
         displayOrderValue = parsed;
       } else {
-        formData.display_order = undefined;
-        displayOrderValue = undefined;
+        setFormData((prev) => ({
+          ...prev,
+          display_order: String(brands?.meta?.total! + 1),
+        }));
+        displayOrderValue = brands?.meta?.total! + 1;
       }
 
+      console.log(displayOrderValue, 'display order');
       const brandData: any = {
         ...formData,
         ...(logoId && { logo_id: logoId }),
@@ -617,10 +622,10 @@ export default function Brands() {
                 {/* Display Order */}
                 <div className="space-y-2">
                   <Label htmlFor="display_order">
-                    Display Order (optional)
+                    Display Order <Asterisk />
                   </Label>
                   <Input
-                    defaultValue={String(brands?.meta?.total! + 1)}
+                    // defaultValue={String(brands?.meta?.total! + 1)}
                     id="display_order"
                     type="number"
                     min={0}
@@ -633,10 +638,10 @@ export default function Brands() {
                       }))
                     }
                   />
-                  {/* <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500">
                     Leave empty to let the system assign the next available
                     order.
-                  </p> */}
+                  </p>
                 </div>
                 {/* Banner */}
                 <div className="space-y-2">

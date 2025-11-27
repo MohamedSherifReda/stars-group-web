@@ -53,9 +53,6 @@ export function MultiSelectInput({
     onChange(value.filter((item) => item !== v));
   };
 
-
-  console.log('value', value);
-  console.log('options', options);
   return (
     <div className={cn('w-full', className)}>
       <Popover open={open} onOpenChange={setOpen}>
