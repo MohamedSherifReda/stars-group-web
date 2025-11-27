@@ -28,4 +28,5 @@ jobs:
             git fetch --all --prune;
             git pull --force origin staging;
             git clean -fd;
-            docker compose up -d --build --remove-orphans;
+            docker compose build --no-cache;
+            docker compose up -d --remove-orphans;

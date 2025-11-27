@@ -8,6 +8,8 @@ RUN pnpm install
 # Step 2: Build
 FROM deps AS build
 COPY . .
+ARG CACHE_BUST
+RUN echo "Cache bust: ${CACHE_BUST:-$(date +%s)}"
 RUN pnpm build
 
 # Step 3: Production image
