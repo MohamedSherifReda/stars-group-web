@@ -11,8 +11,7 @@ dist
 .vite
 .react-router
 
-# Environment files
-.env
+# Environment files (allow .env but block local/secrets)
 .env.local
 .env.*.local
 
