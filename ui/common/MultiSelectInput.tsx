@@ -42,15 +42,15 @@ export function MultiSelectInput({
   const [open, setOpen] = React.useState(false);
 
   const toggleValue = (v: string) => {
-    if (value.includes(v)) {
-      onChange(value.filter((item) => item !== v));
+    if ((value ?? []).includes(v)) {
+      onChange((value ?? []).filter((item) => item !== v));
     } else {
-      onChange([...value, v]);
+      onChange([...(value ?? []), v]);
     }
   };
 
   const removeValue = (v: string) => {
-    onChange(value.filter((item) => item !== v));
+    onChange((value ?? []).filter((item) => item !== v));
   };
 
   return (
@@ -72,9 +72,9 @@ export function MultiSelectInput({
             ) : (
               <div className="flex flex-wrap gap-1">
                 {value?.map((val) => {
-                  const item = options?.find((o) => o?.value === val);
+                  const item = options?.find((o) => o?.value === val) ?? null;
 
-                  if (!item || !item.label) {
+                  if (!item || !item?.label) {
                     return null;
                   }
                   return (
@@ -112,18 +112,18 @@ export function MultiSelectInput({
                 {options?.length > 0 ? (
                   options?.map((opt) => (
                     <CommandItem
-                      key={opt.value}
-                      onSelect={() => toggleValue(opt.value)}
+                      key={opt?.value}
+                      onSelect={() => toggleValue(opt?.value)}
                     >
                       <Check
                         className={cn(
                           'mr-2 h-4 w-4',
-                          value.includes(opt.value)
+                          (value ?? []).includes(opt?.value)
                             ? 'opacity-100'
                             : 'opacity-0'
                         )}
                       />
-                      {opt.label}
+                      {opt?.label}
                     </CommandItem>
                   ))
                 ) : (
