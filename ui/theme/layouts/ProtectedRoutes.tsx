@@ -35,11 +35,19 @@ const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
   }, []);
 
   const currentRoute = useLocation().pathname;
+  console.log(currentRoute, 'current route');
 
   // if token is expired or does not exist, log the user out and redirect to login page
   useEffect(() => {
     const isTokenValid = checkTokenValidity();
-    if (!isTokenValid) {
+    if (
+      !isTokenValid &&
+      currentRoute !== '/auth/login' &&
+      currentRoute !== '/auth/register' &&
+      currentRoute !== '/auth/forgot-password' &&
+      currentRoute !== '/privacy-policy' &&
+      currentRoute !== '/terms-and-conditions'
+    ) {
       logout();
       navigate('/auth/login');
     }
@@ -63,11 +71,6 @@ const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
       </div>
     );
   }
-
-  if (!user && isProtectedRoute(currentRoute)) {
-    return <Navigate to="/auth/login" replace />;
-  }
-
   if (currentRoute === '/privacy-policy') {
     return <PrivacyPolicy />;
   }
@@ -75,6 +78,11 @@ const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (currentRoute === '/terms-and-conditions') {
     return <TermsAndConditions />;
   }
+  if (!user && isProtectedRoute(currentRoute)) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+
 
   return children;
 };

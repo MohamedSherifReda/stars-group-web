@@ -59,13 +59,20 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   getUserRole: () => {
     const authToken = localStorage.getItem('auth_token');
-    if (authToken) {
-      const decodedToken = jwtDecode<{ role: string }>(authToken);
-      console.log('decodedToken', decodedToken);
-      return decodedToken?.role;
+
+    if (!authToken) {
+      // No token means unauthenticated user; simply return null
+      // without triggering additional state changes.
+      return null;
     }
-    const state = useAuthStore.getState();
-    state?.logout();
-    return null;
+
+    try {
+      const decodedToken = jwtDecode<{ role: string }>(authToken);
+
+      return decodedToken?.role ?? null;
+    } catch (error) {
+      console.error('Failed to decode auth token:', error);
+      return null;
+    }
   },
 }));
