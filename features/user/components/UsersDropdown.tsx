@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Controller } from 'react-hook-form';
 import type { Control, FieldValues, Path } from 'react-hook-form';
@@ -51,6 +51,19 @@ interface UsersDropdownProps<T extends FieldValues> {
 // Special constant for "All users" selection
 export const ALL_USERS_VALUE = 'ALL_USERS';
 
+// Special constants for rank-based selection
+export const RANK_SILVER = 'RANK_SILVER';
+export const RANK_GOLD = 'RANK_GOLD';
+export const RANK_PLATINUM = 'RANK_PLATINUM';
+
+const RANK_IDS = [RANK_SILVER, RANK_GOLD, RANK_PLATINUM];
+
+const RANK_LABELS: Record<string, string> = {
+  [RANK_SILVER]: 'Silver Members',
+  [RANK_GOLD]: 'Gold Members',
+  [RANK_PLATINUM]: 'Platinum Members',
+};
+
 export const UsersDropdown = <T extends FieldValues>({
   control,
   name,
@@ -74,7 +87,10 @@ export const UsersDropdown = <T extends FieldValues>({
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['users', page, pageSize],
     queryFn: async () => {
-      const response = await usersApi.getUsers({ "pagination[take]": pageSize, "pagination[skip]": (page - 1) * pageSize });
+      const response = await usersApi.getUsers({
+        'pagination[take]': pageSize,
+        'pagination[skip]': (page - 1) * pageSize,
+      });
       return response.data;
     },
     enabled: true,
@@ -86,7 +102,8 @@ export const UsersDropdown = <T extends FieldValues>({
       setAllUsers((prev) => {
         // Remove duplicates by id
         const newUsers = data.data!.filter(
-          (newUser) => !prev.some((existingUser) => existingUser.id === newUser.id)
+          (newUser) =>
+            !prev.some((existingUser) => existingUser.id === newUser.id)
         );
         return [...prev, ...newUsers];
       });
@@ -233,6 +250,22 @@ export const UsersDropdown = <T extends FieldValues>({
               return;
             }
 
+            const isRank = RANK_IDS.includes(userId);
+
+            // Handle rank selection (only one rank at a time, but can combine with users)
+            if (isRank) {
+              const alreadySelected = selectedIds.includes(userId);
+              const withoutRanks = selectedIds.filter(
+                (id) => !RANK_IDS.includes(id)
+              );
+              const newValue = alreadySelected
+                ? withoutRanks
+                : [...withoutRanks, userId];
+              field.onChange(newValue);
+              onValueChange?.(newValue);
+              return;
+            }
+
             const newValue = selectedIds.includes(userId)
               ? selectedIds.filter((id) => id !== userId)
               : maxSelections && selectedIds.length >= maxSelections
@@ -256,11 +289,13 @@ export const UsersDropdown = <T extends FieldValues>({
             onValueChange?.([]);
           };
 
-          const selectedUsers = useMemo(() => {
-            return allUsers.filter((user) =>
-              selectedIds.includes(user.id.toString())
-            );
-          }, [selectedIds]);
+          const selectedUsers = allUsers.filter((user) =>
+            selectedIds.includes(user.id.toString())
+          );
+
+          const selectedRanks = RANK_IDS.filter((id) =>
+            selectedIds.includes(id)
+          );
 
           return (
             <Popover open={open} onOpenChange={setOpen}>
@@ -287,18 +322,32 @@ export const UsersDropdown = <T extends FieldValues>({
                         />
                       </span>
                     ) : (
-                      selectedUsers.map((user) => (
-                        <span
-                          key={user.id}
-                          className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded px-2 py-0.5 text-xs"
-                        >
-                          {renderUser(user)}
-                          <X
-                            className="h-3 w-3 cursor-pointer hover:text-red-500"
-                            onClick={(e) => removeUser(user.id.toString(), e)}
-                          />
-                        </span>
-                      ))
+                      <>
+                        {selectedRanks.map((rankId) => (
+                          <span
+                            key={rankId}
+                            className="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 rounded px-2 py-0.5 text-xs font-medium"
+                          >
+                            {RANK_LABELS[rankId]}
+                            <X
+                              className="h-3 w-3 cursor-pointer hover:text-red-500"
+                              onClick={(e) => removeUser(rankId, e)}
+                            />
+                          </span>
+                        ))}
+                        {selectedUsers.map((user) => (
+                          <span
+                            key={user.id}
+                            className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded px-2 py-0.5 text-xs"
+                          >
+                            {renderUser(user)}
+                            <X
+                              className="h-3 w-3 cursor-pointer hover:text-red-500"
+                              onClick={(e) => removeUser(user.id.toString(), e)}
+                            />
+                          </span>
+                        ))}
+                      </>
                     )}
                   </div>
                   <ChevronDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
@@ -344,6 +393,46 @@ export const UsersDropdown = <T extends FieldValues>({
                             )}
                           </div>
                           <div className="p-1">
+                            {/* Rank options */}
+                            {RANK_IDS.map((rankId) => {
+                              const isSelected = selectedIds.includes(rankId);
+                              const isDisabled = isAllUsersSelected;
+
+                              return (
+                                <button
+                                  key={rankId}
+                                  type="button"
+                                  onClick={() =>
+                                    !isDisabled && toggleUser(rankId)
+                                  }
+                                  disabled={isDisabled}
+                                  className={cn(
+                                    'w-full flex items-center gap-2 px-2 py-2 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left',
+                                    isSelected &&
+                                      'bg-blue-50 dark:bg-blue-900/20',
+                                    isDisabled &&
+                                      'opacity-50 cursor-not-allowed'
+                                  )}
+                                >
+                                  <div
+                                    className={cn(
+                                      'h-4 w-4 border rounded flex items-center justify-center shrink-0',
+                                      isSelected
+                                        ? 'bg-blue-600 border-blue-600'
+                                        : 'border-gray-300 dark:border-gray-600'
+                                    )}
+                                  >
+                                    {isSelected && (
+                                      <Check className="h-3 w-3 text-white" />
+                                    )}
+                                  </div>
+                                  <span className="flex-1 font-medium text-blue-700 dark:text-blue-400">
+                                    {RANK_LABELS[rankId]}
+                                  </span>
+                                </button>
+                              );
+                            })}
+
                             {showAllUsersOption && (
                               <button
                                 type="button"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit, Trash2, Send, Clock, CalendarIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -41,11 +41,17 @@ import serveNotificationsMeta from '~/meta/serveNotificationsMeta';
 import {
   UsersDropdown,
   ALL_USERS_VALUE,
+  RANK_SILVER,
+  RANK_GOLD,
+  RANK_PLATINUM,
 } from '@features/user/components/UsersDropdown';
 import type {
   BroadCastNotificationPayload,
   ScheduledNotification,
 } from 'core/types/notification.types';
+import SelectInput from '@ui/common/SelectInput';
+import { brandsApi } from '@features/brand/brand.apis';
+import type { Brand } from 'core/types/brand.types';
 
 export const meta = serveNotificationsMeta;
 
@@ -95,6 +101,7 @@ const notificationSchema = z.object({
         message: 'Scheduled date and time must be in the future',
       }
     ),
+  brand_id: z.string().optional(),
 });
 
 type NotificationFormData = z.infer<typeof notificationSchema>;
@@ -114,6 +121,11 @@ export default function Notifications() {
   const [scheduledPageSize, setScheduledPageSize] = useState(10);
 
   const queryClient = useQueryClient();
+
+  // Pagination state for brands used in the SelectInput
+  const [brandPage, setBrandPage] = useState(1);
+  const BRAND_PAGE_SIZE = 5;
+  const [allBrands, setAllBrands] = useState<Brand[]>([]);
 
   // React Hook Form for create/edit form with Zod validation
   const {
@@ -176,6 +188,34 @@ export default function Notifications() {
     refetchOnWindowFocus: true, // Refetch when window regains focus
     refetchOnMount: true, // Refetch when component mounts
   });
+
+  const { data: brandsPage, isFetching: isFetchingBrands } = useQuery({
+    queryKey: ['brands', brandPage, BRAND_PAGE_SIZE],
+    queryFn: () =>
+      brandsApi
+        .getBrands({
+          'pagination[take]': BRAND_PAGE_SIZE,
+          'pagination[skip]': (brandPage - 1) * BRAND_PAGE_SIZE,
+        })
+        .then((res: any) => res.data),
+  });
+
+  // Accumulate brands across pages while avoiding duplicates
+  useEffect(() => {
+    if (brandsPage?.data) {
+      setAllBrands((prev) => {
+        const existingIds = new Set(prev.map((b) => b.id));
+        const newItems = brandsPage.data.filter(
+          (b: Brand) => !existingIds.has(b.id)
+        );
+        return [...prev, ...newItems];
+      });
+    }
+  }, [brandsPage?.data]);
+
+  const totalBrands = brandsPage?.meta?.total ?? 0;
+  const loadedBrandsCount = allBrands.length;
+  const hasMoreBrands = totalBrands > 0 && loadedBrandsCount < totalBrands;
 
   const scheduledNotifications = scheduledNotificationsResponse?.data || [];
   const totalScheduledNotifications =
@@ -257,18 +297,6 @@ export default function Notifications() {
     },
   });
 
-  // Send now mutation
-  // const sendNowMutation = useMutation({
-  //   mutationFn: (id: number) => notificationsApi.sendNotificationNow(id),
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ['notifications'] });
-  //     toast.success('Notification sent successfully');
-  //   },
-  //   onError: (error: any) => {
-  //     toast.error(error.response?.data?.message || 'Failed to send notification');
-  //   },
-  // });
-
   // Handle form submission
   const onSubmit = (data: NotificationFormData) => {
     const isAllUsers = data.users.includes(ALL_USERS_VALUE);
@@ -278,7 +306,9 @@ export default function Notifications() {
       const broadcastData: BroadCastNotificationPayload = {
         title: data.title.trim(),
         message: data.message.trim(),
-        brand_id: 1,
+        ...(data.brand_id && !Number.isNaN(parseInt(data.brand_id as string))
+          ? { brand_id: parseInt(data.brand_id) }
+          : {}),
         ...(data.link && { link: data.link }),
         ...(data.scheduled_at && {
           schedule_at: data.scheduled_at,
@@ -287,16 +317,42 @@ export default function Notifications() {
 
       broadcastMutation.mutate(broadcastData);
     } else {
-      // Use regular endpoint for specific users
+      // Use regular endpoint for specific users and/or rank-based targeting
+      const selectedIds = data.users;
+
+      // Derive rank from special selection values (only one rank should be selected)
+      let rank: number | null = null;
+      if (selectedIds.includes(RANK_SILVER)) {
+        rank = 1;
+      } else if (selectedIds.includes(RANK_GOLD)) {
+        rank = 2;
+      } else if (selectedIds.includes(RANK_PLATINUM)) {
+        rank = 3;
+      }
+
+      // Filter out non-user pseudo-values to build the users array
+      const userIds = selectedIds
+        .filter(
+          (id) => id !== RANK_SILVER && id !== RANK_GOLD && id !== RANK_PLATINUM
+        )
+        .map((id) => parseInt(id, 10))
+        .filter((id) => !Number.isNaN(id));
+
+      const hasUsers = userIds.length > 0;
+
       const notificationData: CreateNotificationPayload = {
         title: data.title.trim(),
         message: data.message.trim(),
-        users: data.users.map((id) => parseInt(id, 10)),
-        brand_id: 0,
+        // If only a rank is selected (no individual users), users should be null
+        users: hasUsers ? userIds : null,
+        ...(data.brand_id && !Number.isNaN(parseInt(data.brand_id as string))
+          ? { brand_id: parseInt(data.brand_id) }
+          : {}),
         ...(data.link && { link: data.link }),
         ...(data.scheduled_at && {
           schedule_at: data.scheduled_at,
         }),
+        ...(rank !== null ? { rank } : {}),
       };
 
       if (editingNotification) {
@@ -317,11 +373,24 @@ export default function Notifications() {
     }
 
     setEditingNotification(notification);
+
+    const userIds =
+      notification.users?.map((userId: number) => userId.toString()) || [];
+
+    // Map numeric rank back to special selection value for the dropdown
+    if (notification.rank != null) {
+      if (notification.rank === 1) {
+        userIds.push(RANK_SILVER);
+      } else if (notification.rank === 2) {
+        userIds.push(RANK_GOLD);
+      } else if (notification.rank === 3) {
+        userIds.push(RANK_PLATINUM);
+      }
+    }
     reset({
       title: notification.title,
       message: notification.message,
-      users:
-        notification.users?.map((userId: number) => userId.toString()) || [],
+      users: userIds,
       link: notification.link || '',
       scheduled_at: notification.schedule_at || '',
     });
@@ -356,32 +425,6 @@ export default function Notifications() {
     //   sendNowMutation.mutate(notification.id);
     // }
   };
-
-  // const getStatusBadge = (status: Notification['status']) => {
-  //   switch (status) {
-  //     case 'sent':
-  //       return (
-  //         <Badge className="bg-green-500 hover:bg-green-600">
-  //           <CheckCircle className="w-3 h-3 mr-1" />
-  //           Sent
-  //         </Badge>
-  //       );
-  //     case 'scheduled':
-  //       return (
-  //         <Badge className="bg-blue-500 hover:bg-blue-600">
-  //           <Clock className="w-3 h-3 mr-1" />
-  //           Scheduled
-  //         </Badge>
-  //       );
-  //     case 'failed':
-  //       return (
-  //         <Badge className="bg-red-500 hover:bg-red-600">
-  //           <XCircle className="w-3 h-3 mr-1" />
-  //           Failed
-  //         </Badge>
-  //       );
-  //   }
-  // };
 
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -611,31 +654,57 @@ export default function Notifications() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>
-                  Recipients <span className="text-red-500">*</span>
-                </Label>
-                <UsersDropdown
-                  control={control}
-                  name="users"
-                  placeholder="Select users to notify..."
-                  multiple={true}
-                  showAllUsersOption={true}
-                  renderUser={(user) => `${user.name} (${user.email})`}
-                  {...(errors.users?.message && {
-                    error: errors.users.message,
-                  })}
-                  pageSize={20}
-                />
-                {watch('users')?.length > 0 && (
-                  <p className="text-sm text-gray-600">
-                    {watch('users').includes(ALL_USERS_VALUE)
-                      ? 'Broadcasting to all users'
-                      : `${watch('users').length} user${
-                          watch('users').length !== 1 ? 's' : ''
-                        } selected`}
-                  </p>
-                )}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Recipients */}
+                <div className="space-y-2">
+                  <Label>
+                    Recipients <span className="text-red-500">*</span>
+                  </Label>
+                  <UsersDropdown
+                    control={control}
+                    name="users"
+                    placeholder="Select users to notify..."
+                    multiple={true}
+                    showAllUsersOption={true}
+                    renderUser={(user) => `${user.name} (${user.email})`}
+                    {...(errors.users?.message && {
+                      error: errors.users.message,
+                    })}
+                    pageSize={20}
+                  />
+                  {watch('users')?.length > 0 && (
+                    <p className="text-sm text-gray-600">
+                      {watch('users').includes(ALL_USERS_VALUE)
+                        ? 'Broadcasting to all users'
+                        : `${watch('users').length} user${
+                            watch('users').length !== 1 ? 's' : ''
+                          } selected`}
+                    </p>
+                  )}
+                </div>
+                {/* Brand (Optional) */}
+                <div className="space-y-2">
+                  <Label htmlFor="brand_id">Brand (Optional)</Label>
+                  <SelectInput
+                    options={allBrands.map((brand: Brand) => ({
+                      label: brand.name,
+                      value: brand.id.toString(),
+                    }))}
+                    control={control}
+                    name="brand_id"
+                    placeholder="Select a brand"
+                    id="brand_id"
+                    loadedCount={loadedBrandsCount}
+                    totalCount={totalBrands}
+                    hasMore={hasMoreBrands}
+                    isLoadingMore={isFetchingBrands}
+                    onLoadMore={() => {
+                      if (hasMoreBrands && !isFetchingBrands) {
+                        setBrandPage((prev) => prev + 1);
+                      }
+                    }}
+                  />
+                </div>
               </div>
               {/* Redirect URL */}
               <div className="space-y-2">
@@ -1109,4 +1178,3 @@ export default function Notifications() {
     </div>
   );
 }
-

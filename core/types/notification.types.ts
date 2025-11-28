@@ -7,7 +7,8 @@ export interface Notification {
   message: string;
   link?: string;
   brand_id?: number;
-  users?: number[];
+  users?: number[] | null;
+  rank?: number | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
@@ -41,11 +42,12 @@ export interface ScheduledNotification {
 export interface CreateNotificationPayload {
   title: string;
   message: string;
-  users: number[];
+  users: number[] | null;
   link?: string;
   // Backend expects schedule_at (without the 'd')
   schedule_at?: string;
   brand_id?: number;
+  rank?: number | null;
 }
 
 export interface BroadCastNotificationPayload {
@@ -62,5 +64,7 @@ export interface UpdateNotificationPayload {
   link?: string;
   schedule_at?: string;
   target_audience?: 'all';
+  users?: number[] | null;
+  rank?: number | null;
 }
 
