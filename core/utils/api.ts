@@ -12,7 +12,7 @@ const createApi = (): AxiosInstance => {
 
   const instance = axios.create({
     baseURL,
-    timeout: 30000, // 30 second timeout
+    timeout: 60000, // 30 second timeout
     headers: {
       'Content-Type': 'application/json',
       // Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}`,
