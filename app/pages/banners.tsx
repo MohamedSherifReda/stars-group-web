@@ -366,6 +366,7 @@ export default function Banners() {
                   <TableHead>Promotion Name</TableHead>
                   <TableHead>Redirect URL</TableHead>
                   <TableHead>Visibility</TableHead>
+                  <TableHead>Brand</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -418,6 +419,13 @@ export default function Banners() {
                         </a>
                       ) : (
                         <span className="text-gray-400">No redirect</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {banner?.brand ? (
+                        <span className="">{banner?.brand?.name}</span>
+                      ) : (
+                        <span className="text-gray-400">No brand</span>
                       )}
                     </TableCell>
                     <TableCell>

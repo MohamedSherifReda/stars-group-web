@@ -1,4 +1,5 @@
-import type { Media } from "./common.types"
+import type { Brand } from './brand.types';
+import type { Media } from './common.types';
 
 export interface Banner {
   id: number;
@@ -16,4 +17,5 @@ export interface Banner {
    * When false or undefined, the banner is considered enabled/active.
    */
   disabled?: boolean;
+  brand?: Brand;
 }

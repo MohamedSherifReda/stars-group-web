@@ -71,7 +71,7 @@ export function MultiSelectInput({
               <span className="text-muted-foreground">{placeholder}</span>
             ) : (
               <div className="flex flex-wrap gap-1">
-                {value.map((val) => {
+                {value?.map((val) => {
                   const item = options?.find((o) => o?.value === val);
 
                   if (!item || !item.label) {
