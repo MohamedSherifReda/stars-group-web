@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { authApi } from '@features/auth/auth.apis';
@@ -17,18 +17,34 @@ import serveForgetPasswordMeta from '~/meta/serveForgetPasswordMeta';
 export const meta = serveForgetPasswordMeta;
 
 export default function ForgotPassword() {
-  const [step, setStep] = useState<'request' | 'reset'>('request');
+  const [step, setStep] = useState<'request' | 'verify_otp' | 'reset'>(
+    'request'
+  );
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-
+  const [otp, setOTP] = useState('');
+  const navigate = useNavigate();
   const requestResetMutation = useMutation({
     mutationFn: (identifier: string) => authApi.forgetPassword(identifier),
     onSuccess: () => {
-      setStep('reset');
+      setStep('verify_otp');
       toast.success('Reset code sent to your email/phone');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to send reset code');
+    },
+  });
+
+  const verifyOTP_IdentifierMutation = useMutation({
+    mutationFn: ({ identifier, otp }: { identifier: string; otp: string }) => {
+      return authApi.verifyOTP_Identifier(identifier, otp);
+    },
+    onSuccess: () => {
+      toast.success('OTP verified successfully');
+      setStep('reset');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to verify OTP');
     },
   });
 
@@ -45,6 +61,7 @@ export default function ForgotPassword() {
       setStep('request');
       setIdentifier('');
       setPassword('');
+      navigate('/auth/login');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to reset password');
@@ -69,16 +86,31 @@ export default function ForgotPassword() {
     completeResetMutation.mutate({ identifier, password });
   };
 
+  const handleVerifyOTP = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp) {
+      toast.error('Please enter your OTP');
+      return;
+    }
+    verifyOTP_IdentifierMutation.mutate({ identifier, otp });
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">
-            {step === 'request' ? 'Forgot Password' : 'Reset Password'}
+            {step === 'request'
+              ? 'Forgot Password'
+              : step === 'verify_otp'
+              ? 'Verify OTP'
+              : 'Reset Password'}
           </CardTitle>
           <CardDescription className="text-center">
             {step === 'request'
               ? 'Enter your email or phone number to receive a reset code'
+              : step === 'verify_otp'
+              ? 'Enter the OTP sent to your email or phone number'
               : 'Enter your new password'}
           </CardDescription>
         </CardHeader>
@@ -108,6 +140,41 @@ export default function ForgotPassword() {
                   : 'Send Reset Code'}
               </Button>
             </form>
+          ) : step === 'verify_otp' ? (
+            <>
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="otp" className="text-sm font-medium">
+                    OTP
+                  </label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    placeholder="Enter OTP"
+                    value={otp}
+                    onChange={(e) => setOTP(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={verifyOTP_IdentifierMutation.isPending}
+                >
+                  {verifyOTP_IdentifierMutation.isPending
+                    ? 'Verifying...'
+                    : 'Verify OTP'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setStep('request')}
+                >
+                  Back
+                </Button>
+              </form>
+            </>
           ) : (
             <form onSubmit={handleCompleteReset} className="space-y-4">
               <div className="space-y-2">

@@ -8,6 +8,10 @@ export const authApi = {
   forgetPassword: (identifier: string) =>
     api.post('/auth/forget-password', { identifier }),
 
+  verifyOTP_Identifier: (identifier: string, otp: string) => {
+    return api.post('/auth/verify-otp', { identifier, otp });
+  },
+
   completeForgetPassword: (identifier: string, password: string) =>
     api.post('/auth/complete-forget-password', { identifier, password }),
 
