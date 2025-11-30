@@ -346,7 +346,7 @@ export default function Notifications() {
         title: data.title.trim(),
         message: data.message.trim(),
         // If only a rank is selected (no individual users), users should be null
-        users: hasUsers ? userIds : null,
+        ...(hasUsers ? { users: userIds } : {}),
 
         ...(data.brand_id && !Number.isNaN(parseInt(data.brand_id as string))
           ? { brand_id: parseInt(data.brand_id) }

@@ -42,7 +42,7 @@ export interface ScheduledNotification {
 export interface CreateNotificationPayload {
   title: string;
   message: string;
-  users: number[] | null;
+  users?: number[] | null;
   link?: string;
   // Backend expects schedule_at (without the 'd')
   schedule_at?: string;
