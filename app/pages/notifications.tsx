@@ -320,14 +320,16 @@ export default function Notifications() {
       // Use regular endpoint for specific users and/or rank-based targeting
       const selectedIds = data.users;
 
-      // Derive rank from special selection values (only one rank should be selected)
-      let rank: number | null = null;
+      // Derive ranks from special selection values (can be multiple, e.g. Silver & Gold)
+      const ranks: number[] = [];
       if (selectedIds.includes(RANK_SILVER)) {
-        rank = 1;
-      } else if (selectedIds.includes(RANK_GOLD)) {
-        rank = 2;
-      } else if (selectedIds.includes(RANK_PLATINUM)) {
-        rank = 3;
+        ranks.push(1);
+      }
+      if (selectedIds.includes(RANK_GOLD)) {
+        ranks.push(2);
+      }
+      if (selectedIds.includes(RANK_PLATINUM)) {
+        ranks.push(3);
       }
 
       // Filter out non-user pseudo-values to build the users array
@@ -345,6 +347,7 @@ export default function Notifications() {
         message: data.message.trim(),
         // If only a rank is selected (no individual users), users should be null
         users: hasUsers ? userIds : null,
+
         ...(data.brand_id && !Number.isNaN(parseInt(data.brand_id as string))
           ? { brand_id: parseInt(data.brand_id) }
           : {}),
@@ -352,7 +355,7 @@ export default function Notifications() {
         ...(data.scheduled_at && {
           schedule_at: data.scheduled_at,
         }),
-        ...(rank !== null ? { rank } : {}),
+        ...(ranks.length ? { rank: ranks } : {}),
       };
 
       if (editingNotification) {
@@ -377,13 +380,16 @@ export default function Notifications() {
     const userIds =
       notification.users?.map((userId: number) => userId.toString()) || [];
 
-    // Map numeric rank back to special selection value for the dropdown
-    if (notification.rank != null) {
-      if (notification.rank === 1) {
+    // Map rank array back to special selection values for the dropdown
+    const ranks = notification.rank || [];
+    if (Array.isArray(ranks)) {
+      if (ranks.includes(1)) {
         userIds.push(RANK_SILVER);
-      } else if (notification.rank === 2) {
+      }
+      if (ranks.includes(2)) {
         userIds.push(RANK_GOLD);
-      } else if (notification.rank === 3) {
+      }
+      if (ranks.includes(3)) {
         userIds.push(RANK_PLATINUM);
       }
     }

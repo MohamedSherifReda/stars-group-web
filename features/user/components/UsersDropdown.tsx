@@ -252,15 +252,14 @@ export const UsersDropdown = <T extends FieldValues>({
 
             const isRank = RANK_IDS.includes(userId);
 
-            // Handle rank selection (only one rank at a time, but can combine with users)
+            // Handle rank selection (can now select multiple ranks together)
             if (isRank) {
-              const alreadySelected = selectedIds.includes(userId);
-              const withoutRanks = selectedIds.filter(
-                (id) => !RANK_IDS.includes(id)
-              );
-              const newValue = alreadySelected
-                ? withoutRanks
-                : [...withoutRanks, userId];
+              const newValue = selectedIds.includes(userId)
+                ? selectedIds.filter((id) => id !== userId)
+                : maxSelections && selectedIds.length >= maxSelections
+                ? selectedIds
+                : [...selectedIds, userId];
+
               field.onChange(newValue);
               onValueChange?.(newValue);
               return;

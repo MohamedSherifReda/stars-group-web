@@ -8,7 +8,8 @@ export interface Notification {
   link?: string;
   brand_id?: number;
   users?: number[] | null;
-  rank?: number | null;
+  // Now supports multiple ranks (e.g. [1, 2] for Silver & Gold)
+  rank?: number[] | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
@@ -18,7 +19,6 @@ export interface Notification {
   status?: 'scheduled' | 'sent' | 'failed';
   user?: User;
 }
-
 
 export interface ScheduledNotification {
   id: number;
@@ -47,7 +47,8 @@ export interface CreateNotificationPayload {
   // Backend expects schedule_at (without the 'd')
   schedule_at?: string;
   brand_id?: number;
-  rank?: number | null;
+  // Array of rank ids, e.g. [1, 2] for Silver & Gold
+  rank?: number[] | null;
 }
 
 export interface BroadCastNotificationPayload {
@@ -65,6 +66,7 @@ export interface UpdateNotificationPayload {
   schedule_at?: string;
   target_audience?: 'all';
   users?: number[] | null;
-  rank?: number | null;
+  // Array of rank ids, e.g. [1, 2] for Silver & Gold
+  rank?: number[] | null;
 }
 
