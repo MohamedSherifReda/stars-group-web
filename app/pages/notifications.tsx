@@ -355,7 +355,7 @@ export default function Notifications() {
         ...(data.scheduled_at && {
           schedule_at: data.scheduled_at,
         }),
-        ...(ranks.length ? { rank: ranks } : {}),
+        ...(ranks.length ? { ranks: ranks } : {}),
       };
 
       if (editingNotification) {
