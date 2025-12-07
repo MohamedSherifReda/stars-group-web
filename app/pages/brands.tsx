@@ -42,9 +42,12 @@ import type { Banner } from 'core/types/banner.types';
 export const meta = serveBrandsMeta;
 
 interface BrandFormData {
-  name: string;
-  heading_title: string;
-  description: string;
+  name_en: string;
+  heading_title_en: string;
+  description_en: string;
+  name_ar: string;
+  heading_title_ar: string;
+  description_ar: string;
   shop_url: string;
   gradient_hex: string;
   display_order: string | undefined;
@@ -62,9 +65,12 @@ export default function Brands() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [formData, setFormData] = useState<BrandFormData>({
-    name: '',
-    heading_title: '',
-    description: '',
+    name_en: '',
+    heading_title_en: '',
+    description_en: '',
+    name_ar: '',
+    heading_title_ar: '',
+    description_ar: '',
     shop_url: '',
     gradient_hex: '#000000',
     display_order: '',
@@ -89,6 +95,7 @@ export default function Brands() {
           'relations[product_picture]': 'true',
           'relations[background_logo]': 'true',
           'relations[banners]': 'true',
+          'relations[brand_translations]': 'true',
           'orders[display_order]': 'asc',
           'pagination[take]': pageSize,
           'pagination[skip]': (currentPage - 1) * pageSize,
@@ -179,15 +186,19 @@ export default function Brands() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      heading_title: '',
-      description: '',
+      name_en: '',
+      heading_title_en: '',
+      description_en: '',
+      name_ar: '',
+      heading_title_ar: '',
+      description_ar: '',
       shop_url: '',
       gradient_hex: '#000000',
       display_order: '',
     });
     setLogoFile(null);
     setProductFile(null);
+    setLogoBackgroundFile(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -246,7 +257,11 @@ export default function Brands() {
 
       console.log(displayOrderValue, 'display order');
       const brandData: any = {
-        ...formData,
+        name: formData.name_ar,
+        heading_title: formData.heading_title_ar,
+        description: formData.description_ar,
+        shop_url: formData.shop_url,
+        gradient_hex: formData.gradient_hex,
         ...(logoId && { logo_id: logoId }),
         ...(productPictureId && { product_picture_id: productPictureId }),
         ...(logoBackgroundId && { background_logo_id: logoBackgroundId }),
@@ -265,9 +280,9 @@ export default function Brands() {
           }),
         brand_id_brand_translations: [
           {
-            description: formData.description,
-            name: formData.name,
-            heading_title: formData.heading_title,
+            name: formData.name_en,
+            heading_title: formData.heading_title_en,
+            description: formData.description_en,
             language: 'en',
           },
         ],
@@ -288,10 +303,20 @@ export default function Brands() {
   const handleEdit = (brand: Brand) => {
     resetForm();
     setEditingBrand(brand);
+
+    // Extract English translation
+    const englishTranslation = brand.brand_translations?.find(
+      (t) => t.language === 'en'
+    );
+
+    // Main fields are Arabic
     setFormData({
-      name: brand.name,
-      heading_title: brand.heading_title,
-      description: brand.description,
+      name_ar: brand.name,
+      heading_title_ar: brand.heading_title,
+      description_ar: brand.description,
+      name_en: englishTranslation?.name || '',
+      heading_title_en: englishTranslation?.heading_title || '',
+      description_en: englishTranslation?.description || '',
       shop_url: brand.shop_url || '',
       gradient_hex: brand.gradient_hex,
       display_order: String(brand.display_order ?? ''),
@@ -497,31 +522,34 @@ export default function Brands() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">
-                    Brand Name
+                  <Label htmlFor="name_ar">
+                    Brand Name (Ar)
                     <Asterisk />
                   </Label>
                   <Input
-                    id="name"
-                    value={formData.name}
+                    id="name_ar"
+                    value={formData.name_ar}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, name: e.target.value }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        name_ar: e.target.value,
+                      }))
                     }
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="heading_title">
-                    Heading Title
+                  <Label htmlFor="heading_title_ar">
+                    Heading Title (Ar)
                     <Asterisk />
                   </Label>
                   <Input
-                    id="heading_title"
-                    value={formData.heading_title}
+                    id="heading_title_ar"
+                    value={formData.heading_title_ar}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        heading_title: e.target.value,
+                        heading_title_ar: e.target.value,
                       }))
                     }
                     required
@@ -530,16 +558,70 @@ export default function Brands() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">
-                  Description <Asterisk />
+                <Label htmlFor="description_ar">
+                  Description (Ar) <Asterisk />
                 </Label>
                 <Textarea
-                  id="description"
-                  value={formData.description}
+                  id="description_ar"
+                  value={formData.description_ar}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      description: e.target.value,
+                      description_ar: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name_en">
+                    Brand Name (En)
+                    <Asterisk />
+                  </Label>
+                  <Input
+                    id="name_en"
+                    value={formData.name_en}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        name_en: e.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="heading_title_en">
+                    Heading Title (En)
+                    <Asterisk />
+                  </Label>
+                  <Input
+                    id="heading_title_en"
+                    value={formData.heading_title_en}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        heading_title_en: e.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description_en">
+                  Description (En) <Asterisk />
+                </Label>
+                <Textarea
+                  id="description_en"
+                  value={formData.description_en}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description_en: e.target.value,
                     }))
                   }
                   required
@@ -589,7 +671,6 @@ export default function Brands() {
                     onChange={(e) => {
                       console.log('logo file', e.target.files?.[0]);
                       setLogoFile(e.target.files?.[0] || null);
-                      5;
                     }}
                   />
                 </div>
@@ -732,25 +813,30 @@ export default function Brands() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_name">Brand Name</Label>
+                <Label htmlFor="edit_name_ar">Brand Name (Ar)</Label>
                 <Input
-                  id="edit_name"
-                  value={formData.name}
+                  id="edit_name_ar"
+                  value={formData.name_ar}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      name_ar: e.target.value,
+                    }))
                   }
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_heading_title">Heading Title</Label>
+                <Label htmlFor="edit_heading_title_ar">
+                  Heading Title (Ar)
+                </Label>
                 <Input
-                  id="edit_heading_title"
-                  value={formData.heading_title}
+                  id="edit_heading_title_ar"
+                  value={formData.heading_title_ar}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      heading_title: e.target.value,
+                      heading_title_ar: e.target.value,
                     }))
                   }
                   required
@@ -758,14 +844,61 @@ export default function Brands() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_description">Description</Label>
+              <Label htmlFor="edit_description_ar">Description (Ar)</Label>
               <Textarea
-                id="edit_description"
-                value={formData.description}
+                id="edit_description_ar"
+                value={formData.description_ar}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    description: e.target.value,
+                    description_ar: e.target.value,
+                  }))
+                }
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_name_en">Brand Name (En)</Label>
+                <Input
+                  id="edit_name_en"
+                  value={formData.name_en}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      name_en: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_heading_title_en">
+                  Heading Title (En)
+                </Label>
+                <Input
+                  id="edit_heading_title_en"
+                  value={formData.heading_title_en}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      heading_title_en: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_description_en">Description (En)</Label>
+              <Textarea
+                id="edit_description_en"
+                value={formData.description_en}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description_en: e.target.value,
                   }))
                 }
                 required
