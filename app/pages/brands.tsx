@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from '@ui/common/dialog';
 import { Input } from '@ui/common/input';
+import { FileInput } from '@ui/common/file-input';
 import { Label } from '@ui/common/label';
 import { Textarea } from '@ui/common/textarea';
 import { DataTable, type ColumnDef } from '@ui/common/data-table';
@@ -316,7 +317,7 @@ export default function Brands() {
     const englishTranslation = brand.brand_id_brand_translations?.find(
       (t) => t.language === 'en'
     );
-
+    console.log('the edited brand', brand);
     // main Fields are arabic
     setFormData({
       name_en: englishTranslation?.name || '',
@@ -523,6 +524,7 @@ export default function Brands() {
     const list = brands?.data ?? [];
     return [...list].sort((a, b) => a?.display_order - b?.display_order);
   }, [brands?.data]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -686,39 +688,33 @@ export default function Brands() {
                   <Label htmlFor="logo">
                     Logo <Asterisk />
                   </Label>
-                  <Input
+                  <FileInput
                     id="logo"
-                    type="file"
                     accept="image/*"
-                    onChange={(e) => {
-                      setLogoFile(e.target.files?.[0] || null);
-                    }}
+                    placeholder="Select a logo image"
+                    onChange={(file) => setLogoFile(file)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="product_picture">
                     Product Picture <Asterisk />
                   </Label>
-                  <Input
+                  <FileInput
                     id="product_picture"
-                    type="file"
                     accept="image/*"
-                    onChange={(e) =>
-                      setProductFile(e.target.files?.[0] || null)
-                    }
+                    placeholder="Select a product picture"
+                    onChange={(file) => setProductFile(file)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="logo_background">
                     Logo Background Image <Asterisk />
                   </Label>
-                  <Input
+                  <FileInput
                     id="logo_background"
-                    type="file"
                     accept="image/*"
-                    onChange={(e) =>
-                      setLogoBackgroundFile(e.target.files?.[0] || null)
-                    }
+                    placeholder="Select a logo background image"
+                    onChange={(file) => setLogoBackgroundFile(file)}
                   />
                 </div>
                 {/* Display Order */}
@@ -958,36 +954,85 @@ export default function Brands() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit_logo">Logo (optional)</Label>
-                <Input
+                <FileInput
                   id="edit_logo"
-                  type="file"
                   accept="image/*"
-                  onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                  placeholder={
+                    editingBrand?.logo?.key?.replace('/assets/', '') ||
+                    logoFile?.name ||
+                    'Select a logo image'
+                  }
+                  onChange={(file) => setLogoFile(file)}
                 />
+                {editingBrand && editingBrand?.logo?.url && (
+                  <img
+                    src={editingBrand.logo.url + editingBrand.logo?.key}
+                    crossOrigin="anonymous"
+                    alt={editingBrand.name}
+                    className="w-full h-20 object-contain rounded border mt-2"
+                    loading="eager"
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_product_picture">
                   Product Picture (optional)
                 </Label>
-                <Input
+                <FileInput
                   id="edit_product_picture"
-                  type="file"
                   accept="image/*"
-                  onChange={(e) => setProductFile(e.target.files?.[0] || null)}
+                  placeholder={
+                    editingBrand?.product_picture?.key?.replace(
+                      '/assets/',
+                      ''
+                    ) ||
+                    productFile?.name ||
+                    'Select a product picture'
+                  }
+                  onChange={(file) => setProductFile(file)}
                 />
+                {editingBrand && editingBrand?.product_picture?.url && (
+                  <img
+                    src={
+                      editingBrand.product_picture.url +
+                      editingBrand.product_picture?.key
+                    }
+                    crossOrigin="anonymous"
+                    alt={editingBrand.name}
+                    className="w-full h-20 object-contain rounded border mt-2"
+                    loading="eager"
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="logo_background">
                   Logo Background Image <Asterisk />
                 </Label>
-                <Input
+                <FileInput
                   id="logo_background"
-                  type="file"
                   accept="image/*"
-                  onChange={(e) =>
-                    setLogoBackgroundFile(e.target.files?.[0] || null)
+                  placeholder={
+                    editingBrand?.background_logo?.key?.replace(
+                      '/assets/',
+                      ''
+                    ) ||
+                    logoBackgroundFile?.name ||
+                    'Select a logo background image'
                   }
+                  onChange={(file) => setLogoBackgroundFile(file)}
                 />
+                {editingBrand && editingBrand?.background_logo?.url && (
+                  <img
+                    src={
+                      editingBrand.background_logo.url +
+                      editingBrand.background_logo?.key
+                    }
+                    crossOrigin="anonymous"
+                    alt={editingBrand.name}
+                    className="w-full h-20 object-contain rounded border mt-2"
+                    loading="eager"
+                  />
+                )}
               </div>
               {/* Banner  (Edit)*/}
               {
