@@ -3,8 +3,11 @@ import type { ApiResponse } from 'core/types/api.types';
 import type { Brand } from 'core/types/brand.types';
 
 export const brandsApi = {
-  getBrands: (params?: Record<string, any>) => {
-    return api.get<ApiResponse<Brand[]>>('/brands', { params });
+  getBrands: (params?: Record<string, any>, headers?: {}) => {
+    return api.get<ApiResponse<Brand[]>>('/brands', {
+      params,
+      headers: headers || {},
+    });
   },
 
   getBrand: (id: number, params?: Record<string, any>) =>

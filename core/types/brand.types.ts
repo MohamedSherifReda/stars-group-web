@@ -16,7 +16,7 @@ export interface Brand {
   logo?: Media;
   product_picture?: Media;
   banners?: Banner[] | number[] | string[];
-  brand_translations?: BrandTranslation[];
+  brand_id_brand_translations?: BrandTranslation[];
 }
 
 export interface BrandTranslation {

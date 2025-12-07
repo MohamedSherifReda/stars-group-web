@@ -90,16 +90,20 @@ export default function Brands() {
     queryKey: ['brands', currentPage, pageSize],
     queryFn: () =>
       brandsApi
-        .getBrands({
-          'relations[logo]': 'true',
-          'relations[product_picture]': 'true',
-          'relations[background_logo]': 'true',
-          'relations[banners]': 'true',
-          'relations[brand_translations]': 'true',
-          'orders[display_order]': 'asc',
-          'pagination[take]': pageSize,
-          'pagination[skip]': (currentPage - 1) * pageSize,
-        })
+        .getBrands(
+          {
+            'relations[logo]': 'true',
+            'relations[product_picture]': 'true',
+            'relations[background_logo]': 'true',
+            'relations[banners]': 'true',
+            'orders[display_order]': 'asc',
+            'pagination[take]': pageSize,
+            'pagination[skip]': (currentPage - 1) * pageSize,
+          },
+          {
+            'x-skip-translations': true,
+          }
+        )
         .then((res) => res.data),
   });
 
@@ -255,7 +259,6 @@ export default function Brands() {
         displayOrderValue = brands?.meta?.total! + 1;
       }
 
-      console.log(displayOrderValue, 'display order');
       const brandData: any = {
         name: formData.name_ar,
         heading_title: formData.heading_title_ar,
@@ -278,14 +281,19 @@ export default function Brands() {
               id: parseInt(banner as string),
             })),
           }),
-        brand_id_brand_translations: [
-          {
-            name: formData.name_en,
-            heading_title: formData.heading_title_en,
-            description: formData.description_en,
-            language: 'en',
-          },
-        ],
+        brand_id_brand_translations:
+          formData?.name_en ||
+          formData?.heading_title_en ||
+          formData?.description_en
+            ? [
+                {
+                  name: formData.name_en,
+                  heading_title: formData.heading_title_en,
+                  description: formData.description_en,
+                  language: 'en',
+                },
+              ]
+            : [],
       };
 
       if (editingBrand) {
@@ -305,18 +313,18 @@ export default function Brands() {
     setEditingBrand(brand);
 
     // Extract English translation
-    const englishTranslation = brand.brand_translations?.find(
+    const englishTranslation = brand.brand_id_brand_translations?.find(
       (t) => t.language === 'en'
     );
 
-    // Main fields are Arabic
+    // main Fields are arabic
     setFormData({
-      name_ar: brand.name,
-      heading_title_ar: brand.heading_title,
-      description_ar: brand.description,
       name_en: englishTranslation?.name || '',
       heading_title_en: englishTranslation?.heading_title || '',
       description_en: englishTranslation?.description || '',
+      name_ar: brand?.name || '',
+      heading_title_ar: brand?.heading_title || '',
+      description_ar: brand?.description || '',
       shop_url: brand.shop_url || '',
       gradient_hex: brand.gradient_hex,
       display_order: String(brand.display_order ?? ''),
@@ -388,15 +396,40 @@ export default function Brands() {
     },
     {
       id: 'name',
-      header: 'Name',
-      cell: (brand) => <span className="font-medium">{brand.name}</span>,
+      header: 'Name (En)',
+      cell: (brand) => {
+        const englishTranslation = brand?.brand_id_brand_translations?.find(
+          (translation) => translation?.language === 'en'
+        );
+
+        return (
+          <span className="font-medium">
+            {englishTranslation?.name || 'N/A'}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'name_ar',
+      header: 'Name (Ar)',
+      cell: (brand) => {
+        return <span>{brand?.name}</span>;
+      },
     },
     {
       id: 'description',
-      header: 'Description',
-      cell: (brand) => (
-        <span className="line-clamp-1">{brand.description}</span>
-      ),
+      header: 'Description (En)',
+      cell: (brand) => {
+        const englishTranslation = brand?.brand_id_brand_translations?.find(
+          (translation) => translation?.language === 'en'
+        );
+        return (
+          <span className="line-clamp-1">
+            {' '}
+            {englishTranslation?.description || 'N/A'}
+          </span>
+        );
+      },
       className: 'max-w-xs',
     },
     {
@@ -512,7 +545,7 @@ export default function Brands() {
               Add Brand
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Brand</DialogTitle>
               <DialogDescription>
@@ -576,10 +609,7 @@ export default function Brands() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name_en">
-                    Brand Name (En)
-                    <Asterisk />
-                  </Label>
+                  <Label htmlFor="name_en">Brand Name (En)</Label>
                   <Input
                     id="name_en"
                     value={formData.name_en}
@@ -589,14 +619,10 @@ export default function Brands() {
                         name_en: e.target.value,
                       }))
                     }
-                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="heading_title_en">
-                    Heading Title (En)
-                    <Asterisk />
-                  </Label>
+                  <Label htmlFor="heading_title_en">Heading Title (En)</Label>
                   <Input
                     id="heading_title_en"
                     value={formData.heading_title_en}
@@ -606,15 +632,12 @@ export default function Brands() {
                         heading_title_en: e.target.value,
                       }))
                     }
-                    required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description_en">
-                  Description (En) <Asterisk />
-                </Label>
+                <Label htmlFor="description_en">Description (En)</Label>
                 <Textarea
                   id="description_en"
                   value={formData.description_en}
@@ -624,7 +647,6 @@ export default function Brands() {
                       description_en: e.target.value,
                     }))
                   }
-                  required
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -669,7 +691,6 @@ export default function Brands() {
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
-                      console.log('logo file', e.target.files?.[0]);
                       setLogoFile(e.target.files?.[0] || null);
                     }}
                   />
@@ -740,7 +761,7 @@ export default function Brands() {
                     }
                     value={(formData.banners as string[]) ?? []}
                     onChange={(value) => {
-                      console.log('value', value);
+                    
                       setFormData((prev) => ({
                         ...prev,
                         banners: value,
@@ -813,7 +834,9 @@ export default function Brands() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_name_ar">Brand Name (Ar)</Label>
+                <Label htmlFor="edit_name_ar">
+                  Brand Name (Ar) <Asterisk />
+                </Label>
                 <Input
                   id="edit_name_ar"
                   value={formData.name_ar}
@@ -828,7 +851,7 @@ export default function Brands() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_heading_title_ar">
-                  Heading Title (Ar)
+                  Heading Title (Ar) <Asterisk />
                 </Label>
                 <Input
                   id="edit_heading_title_ar"
@@ -844,7 +867,9 @@ export default function Brands() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_description_ar">Description (Ar)</Label>
+              <Label htmlFor="edit_description_ar">
+                Description (Ar) <Asterisk />
+              </Label>
               <Textarea
                 id="edit_description_ar"
                 value={formData.description_ar}
@@ -870,7 +895,6 @@ export default function Brands() {
                       name_en: e.target.value,
                     }))
                   }
-                  required
                 />
               </div>
               <div className="space-y-2">
@@ -886,7 +910,6 @@ export default function Brands() {
                       heading_title_en: e.target.value,
                     }))
                   }
-                  required
                 />
               </div>
             </div>
@@ -901,7 +924,6 @@ export default function Brands() {
                     description_en: e.target.value,
                   }))
                 }
-                required
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
