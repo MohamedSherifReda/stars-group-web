@@ -761,7 +761,6 @@ export default function Brands() {
                     }
                     value={(formData.banners as string[]) ?? []}
                     onChange={(value) => {
-                    
                       setFormData((prev) => ({
                         ...prev,
                         banners: value,
@@ -826,7 +825,7 @@ export default function Brands() {
 
       {/* Edit Brand Dialog */}
       <Dialog open={!!editingBrand} onOpenChange={() => setEditingBrand(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Brand</DialogTitle>
             <DialogDescription>Update brand information.</DialogDescription>
