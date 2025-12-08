@@ -611,7 +611,9 @@ export default function Brands() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name_en">Brand Name (En)</Label>
+                  <Label htmlFor="name_en">
+                    Brand Name (En) <Asterisk />
+                  </Label>
                   <Input
                     id="name_en"
                     value={formData.name_en}
@@ -621,10 +623,13 @@ export default function Brands() {
                         name_en: e.target.value,
                       }))
                     }
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="heading_title_en">Heading Title (En)</Label>
+                  <Label htmlFor="heading_title_en">
+                    Heading Title (En) <Asterisk />
+                  </Label>
                   <Input
                     id="heading_title_en"
                     value={formData.heading_title_en}
@@ -634,12 +639,15 @@ export default function Brands() {
                         heading_title_en: e.target.value,
                       }))
                     }
+                    required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description_en">Description (En)</Label>
+                <Label htmlFor="description_en">
+                  Description (En) <Asterisk />
+                </Label>
                 <Textarea
                   id="description_en"
                   value={formData.description_en}
@@ -649,6 +657,7 @@ export default function Brands() {
                       description_en: e.target.value,
                     }))
                   }
+                  required
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -719,9 +728,7 @@ export default function Brands() {
                 </div>
                 {/* Display Order */}
                 <div className="space-y-2">
-                  <Label htmlFor="display_order">
-                    Display Order <Asterisk />
-                  </Label>
+                  <Label htmlFor="display_order">Display Order</Label>
                   <Input
                     // defaultValue={String(brands?.meta?.total! + 1)}
                     id="display_order"
@@ -880,7 +887,9 @@ export default function Brands() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_name_en">Brand Name (En)</Label>
+                <Label htmlFor="edit_name_en">
+                  Brand Name (En) <Asterisk />
+                </Label>
                 <Input
                   id="edit_name_en"
                   value={formData.name_en}
@@ -890,11 +899,12 @@ export default function Brands() {
                       name_en: e.target.value,
                     }))
                   }
+                  required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_heading_title_en">
-                  Heading Title (En)
+                  Heading Title (En) <Asterisk />
                 </Label>
                 <Input
                   id="edit_heading_title_en"
@@ -905,11 +915,14 @@ export default function Brands() {
                       heading_title_en: e.target.value,
                     }))
                   }
+                  required
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_description_en">Description (En)</Label>
+              <Label htmlFor="edit_description_en">
+                Description (En) <Asterisk />
+              </Label>
               <Textarea
                 id="edit_description_en"
                 value={formData.description_en}
@@ -919,6 +932,7 @@ export default function Brands() {
                     description_en: e.target.value,
                   }))
                 }
+                required
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
