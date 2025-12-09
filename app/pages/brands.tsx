@@ -30,13 +30,6 @@ import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import serveBrandsMeta from '~/meta/serveBrandsMeta';
 import { bannersApi } from '@features/banner/banner.apis';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@ui/common/select';
 import { MultiSelectInput } from '@ui/common/MultiSelectInput';
 import type { Banner } from 'core/types/banner.types';
 
