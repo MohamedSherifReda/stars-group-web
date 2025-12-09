@@ -334,7 +334,11 @@ export default function Notifications() {
         ...(data.brand_id && !Number.isNaN(parseInt(data.brand_id as string))
           ? { brand_id: parseInt(data.brand_id) }
           : {}),
-        ...(data.link && { link: data.link }),
+        ...(data.link && {
+          link: data?.brand_url_id
+            ? `${data?.link?.replace('x', data?.brand_url_id)}`
+            : data.link,
+        }),
         ...(data.scheduled_at && {
           schedule_at: data.scheduled_at,
         }),
