@@ -52,61 +52,79 @@ import type {
 import SelectInput from '@ui/common/SelectInput';
 import { brandsApi } from '@features/brand/brand.apis';
 import type { Brand } from 'core/types/brand.types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@ui/common/select';
+import { Field, FieldLabel } from '@ui/common/field';
 
 export const meta = serveNotificationsMeta;
 
-// Zod schema for notification form validation
-const notificationSchema = z.object({
-  title: z
-    .string()
-    .min(1, 'Title is required')
-    .trim()
-    .min(1, 'Title cannot be blank')
-    .max(100, 'Title must be less than 100 characters'),
-  message: z
-    .string()
-    .min(1, 'Message is required')
-    .trim()
-    .min(1, 'Message cannot be blank')
-    .max(500, 'Message must be less than 500 characters'),
-  users: z.array(z.string()).min(1, 'Please select at least one user'),
-  link: z
-    .string()
-    .optional()
-    .refine(
-      (value) => {
-        if (!value || value.trim() === '') return true;
-        try {
-          new URL(value);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      { message: 'Please enter a valid URL (e.g., https://example.com)' }
-    ),
-  scheduled_at: z
-    .string()
-    .optional()
-    .refine(
-      (value) => {
-        // if value is not provided, return true since it's optional
-        if (!value) return true;
-        const scheduledDate = new Date(value);
-        const now = new Date();
-        // Compare timestamps to avoid any date object comparison quirks
-        return scheduledDate.getTime() >= now.getTime();
-      },
-      {
-        message: 'Scheduled date and time must be in the future',
-      }
-    ),
-  brand_id: z.string().optional(),
-});
-
-type NotificationFormData = z.infer<typeof notificationSchema>;
+const redirectionUrls = [
+  {
+    label: '/brand',
+    value: '/brand',
+  },
+  {
+    label: '/home',
+    value: '/home',
+  },
+  {
+    label: '/brand-x',
+    value: '/brand-x',
+  },
+];
 
 export default function Notifications() {
+  // Zod schema for notification form validation
+  const notificationSchema = z
+    .object({
+      title: z
+        .string()
+        .min(1, 'Title is required')
+        .trim()
+        .min(1, 'Title cannot be blank')
+        .max(100, 'Title must be less than 100 characters'),
+      message: z
+        .string()
+        .min(1, 'Message is required')
+        .trim()
+        .min(1, 'Message cannot be blank')
+        .max(500, 'Message must be less than 500 characters'),
+      users: z.array(z.string()).min(1, 'Please select at least one user'),
+      link: z.string().optional(),
+      scheduled_at: z
+        .string()
+        .optional()
+        .refine(
+          (value) => {
+            // if value is not provided, return true since it's optional
+            if (!value) return true;
+            const scheduledDate = new Date(value);
+            const now = new Date();
+            // Compare timestamps to avoid any date object comparison quirks
+            return scheduledDate.getTime() >= now.getTime();
+          },
+          {
+            message: 'Scheduled date and time must be in the future',
+          }
+        ),
+      brand_id: z.string().optional(),
+      brand_url_id: z.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (data.link && data.link === '/brand-x' && !data.brand_url_id?.trim()) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['brand_url_id'],
+          message: 'Brand is required when link is provided',
+        });
+      }
+    });
+  type NotificationFormData = z.infer<typeof notificationSchema>;
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingNotification, setEditingNotification] =
     useState<Notification | null>(null);
@@ -126,7 +144,7 @@ export default function Notifications() {
   const [brandPage, setBrandPage] = useState(1);
   const BRAND_PAGE_SIZE = 5;
   const [allBrands, setAllBrands] = useState<Brand[]>([]);
-
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   // React Hook Form for create/edit form with Zod validation
   const {
     register,
@@ -135,6 +153,7 @@ export default function Notifications() {
     reset,
     control,
     watch,
+    setValue,
   } = useForm<NotificationFormData>({
     resolver: zodResolver(notificationSchema),
     defaultValues: {
@@ -145,6 +164,8 @@ export default function Notifications() {
       scheduled_at: '',
     },
   });
+
+  const notificationLinkValue = watch('link');
 
   // Fetch notifications with pagination
   const { data: notificationsResponse, isLoading } = useQuery({
@@ -351,7 +372,11 @@ export default function Notifications() {
         ...(data.brand_id && !Number.isNaN(parseInt(data.brand_id as string))
           ? { brand_id: parseInt(data.brand_id) }
           : {}),
-        ...(data.link && { link: data.link }),
+        ...(data.link && {
+          link: data?.brand_url_id
+            ? `${data?.link?.replace('x', data?.brand_url_id)}`
+            : data.link,
+        }),
         ...(data.scheduled_at && {
           schedule_at: data.scheduled_at,
         }),
@@ -714,15 +739,79 @@ export default function Notifications() {
               </div>
               {/* Redirect URL */}
               <div className="space-y-2">
-                <Label htmlFor="link">Redirect URL (Optional)</Label>
-                <Input
-                  id="link"
-                  type="url"
-                  {...register('link')}
-                  placeholder="https://example.com"
+                <Controller
+                  name="link"
+                  control={control}
+                  render={({ field }) => {
+                    return (
+                      <Field>
+                        <FieldLabel htmlFor="link">
+                          Redirect URL (Optional)
+                        </FieldLabel>
+                        <Select
+                          value={field?.value || ''}
+                          onValueChange={(value) => {
+                            setValue('link', value);
+                            if (value === '/brand-x') {
+                              setSelectedBrandId(null);
+                            }
+                          }}
+                        >
+                          <SelectTrigger id="link">
+                            <SelectValue placeholder="Select a redirection url" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {redirectionUrls.map((item) => {
+                              return (
+                                <SelectItem key={item.value} value={item.value}>
+                                  {item.label}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    );
+                  }}
                 />
                 {errors.link && (
                   <p className="text-sm text-red-500">{errors.link.message}</p>
+                )}
+                {notificationLinkValue === '/brand-x' && (
+                  <Controller
+                    name="brand_url_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ''}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedBrandId(value);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a brand" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allBrands?.map((brand: Brand) => {
+                            return (
+                              <SelectItem
+                                key={brand?.id}
+                                value={String(brand?.id)}
+                              >
+                                {brand?.name}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                )}
+                {errors?.brand_url_id && (
+                  <p className="text-sm text-red-500">
+                    {errors?.brand_url_id.message}
+                  </p>
                 )}
                 <p className="text-sm text-gray-500">
                   Optional: Add a link to direct users to a specific page
