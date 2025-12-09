@@ -73,8 +73,8 @@ const redirectionUrls = [
     value: '/home',
   },
   {
-    label: '/brand-id/x',
-    value: '/brand-id/x',
+    label: '/brand/id',
+    value: '/brand/id',
   },
 ];
 
@@ -113,17 +113,16 @@ export default function Notifications() {
           }
         ),
       brand_id: z.string().optional(),
-      brand_url_id: z.string().optional(),
     })
     .superRefine((data, ctx) => {
       if (
         data.link &&
-        data.link === '/brand-id/x' &&
-        !data.brand_url_id?.trim()
+        data.link === redirectionUrls[2]?.value &&
+        !data.brand_id?.trim()
       ) {
         ctx.addIssue({
           code: 'custom',
-          path: ['brand_url_id'],
+          path: ['brand_id'],
           message: 'Brand is required when link is provided',
         });
       }
@@ -148,7 +147,7 @@ export default function Notifications() {
   const [brandPage, setBrandPage] = useState(1);
   const BRAND_PAGE_SIZE = 5;
   const [allBrands, setAllBrands] = useState<Brand[]>([]);
-  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+
   // React Hook Form for create/edit form with Zod validation
   const {
     register,
@@ -168,8 +167,6 @@ export default function Notifications() {
       scheduled_at: '',
     },
   });
-
-  const notificationLinkValue = watch('link');
 
   // Fetch notifications with pagination
   const { data: notificationsResponse, isLoading } = useQuery({
@@ -335,9 +332,7 @@ export default function Notifications() {
           ? { brand_id: parseInt(data.brand_id) }
           : {}),
         ...(data.link && {
-          link: data?.brand_url_id
-            ? `${data?.link?.replace('x', data?.brand_url_id)}`
-            : data.link,
+          link: data?.link === '/brand/id' ? '/brand' : data?.link,
         }),
         ...(data.scheduled_at && {
           schedule_at: data.scheduled_at,
@@ -381,9 +376,7 @@ export default function Notifications() {
           ? { brand_id: parseInt(data.brand_id) }
           : {}),
         ...(data.link && {
-          link: data?.brand_url_id
-            ? `${data?.link?.replace('x', data?.brand_url_id)}`
-            : data.link,
+          link: data?.link === '/brand/id' ? '/brand' : data?.link,
         }),
         ...(data.scheduled_at && {
           schedule_at: data.scheduled_at,
@@ -743,6 +736,11 @@ export default function Notifications() {
                       }
                     }}
                   />
+                  {errors?.brand_id && (
+                    <p className="text-sm text-red-500">
+                      {errors?.brand_id?.message}
+                    </p>
+                  )}
                 </div>
               </div>
               {/* Redirect URL */}
@@ -785,7 +783,7 @@ export default function Notifications() {
                 {errors.link && (
                   <p className="text-sm text-red-500">{errors.link.message}</p>
                 )}
-                {notificationLinkValue === '/brand-id/x' && (
+                {/* {notificationLinkValue === '/brand-id/x' && (
                   <Controller
                     name="brand_url_id"
                     control={control}
@@ -820,7 +818,7 @@ export default function Notifications() {
                   <p className="text-sm text-red-500">
                     {errors?.brand_url_id.message}
                   </p>
-                )}
+                )} */}
                 <p className="text-sm text-gray-500">
                   Optional: Add a link to direct users to a specific page
                 </p>
