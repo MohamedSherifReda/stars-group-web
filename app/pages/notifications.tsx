@@ -621,7 +621,7 @@ export default function Notifications() {
               Create Notification
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl ">
             <DialogHeader>
               <DialogTitle>Create Push Notification</DialogTitle>
               <DialogDescription>
