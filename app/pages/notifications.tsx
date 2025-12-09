@@ -73,8 +73,8 @@ const redirectionUrls = [
     value: '/home',
   },
   {
-    label: '/brand-x',
-    value: '/brand-x',
+    label: '/brand-id/x',
+    value: '/brand-id/x',
   },
 ];
 
@@ -116,7 +116,11 @@ export default function Notifications() {
       brand_url_id: z.string().optional(),
     })
     .superRefine((data, ctx) => {
-      if (data.link && data.link === '/brand-x' && !data.brand_url_id?.trim()) {
+      if (
+        data.link &&
+        data.link === '/brand-id/x' &&
+        !data.brand_url_id?.trim()
+      ) {
         ctx.addIssue({
           code: 'custom',
           path: ['brand_url_id'],
@@ -752,7 +756,7 @@ export default function Notifications() {
                           value={field?.value || ''}
                           onValueChange={(value) => {
                             setValue('link', value);
-                            if (value === '/brand-x') {
+                            if (value === '/brand-id/x') {
                               setSelectedBrandId(null);
                             }
                           }}
@@ -777,7 +781,7 @@ export default function Notifications() {
                 {errors.link && (
                   <p className="text-sm text-red-500">{errors.link.message}</p>
                 )}
-                {notificationLinkValue === '/brand-x' && (
+                {notificationLinkValue === '/brand-id/x' && (
                   <Controller
                     name="brand_url_id"
                     control={control}
