@@ -163,7 +163,7 @@ export default function Notifications() {
       title: '',
       message: '',
       users: [],
-      link: '',
+      link: '/home',
       scheduled_at: '',
     },
   });
