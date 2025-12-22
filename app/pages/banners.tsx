@@ -185,7 +185,6 @@ export default function Banners() {
   };
 
   const handleEdit = (banner: Banner) => {
-    console.log('the about to edit banner', banner);
     resetForm();
     setEditingBanner(banner);
     setFormData({
