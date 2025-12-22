@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from '@ui/common/select';
 import { Toggle } from '~/components/ui/toggle';
+import { FileInput } from '@ui/common/file-input';
 
 export const meta = serveBannersMeta;
 
@@ -260,7 +261,7 @@ export default function Banners() {
                       }))
                     }
                     placeholder="https://example.com"
-                    // required
+                  
                   />
                 </div>
                 <div>
@@ -296,32 +297,30 @@ export default function Banners() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="image_en">
-                    English Image <Asterisk />
-                  </Label>
-                  <Input
-                    id="image_en"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                      setImageEnFile(e.target.files?.[0] || null)
-                    }
-                    required
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="image_en">
+                      English Image <Asterisk />
+                    </Label>
+                    <FileInput
+                      id="image_en"
+                      accept="image/*"
+                      placeholder="Select a banner image"
+                      onChange={(file) => setImageEnFile(file)}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="image_ar">
-                    Arabic Image <Asterisk />
-                  </Label>
-                  <Input
-                    id="image_ar"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                      setImageArFile(e.target.files?.[0] || null)
-                    }
-                    required
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="image_ar">
+                      Arabic Image <Asterisk />
+                    </Label>
+                    <FileInput
+                      id="image_ar"
+                      accept="image/*"
+                      placeholder="Select a banner image"
+                      onChange={(file) => setImageArFile(file)}
+                    />
+                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -553,15 +552,21 @@ export default function Banners() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_image_en">
-                  English Image <Asterisk />
-                </Label>
-                <Input
-                  id="edit_image_en"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageEnFile(e.target.files?.[0] || null)}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="edit_image_en">
+                    English Image <Asterisk />
+                  </Label>
+                  <FileInput
+                    id="edit_image_en"
+                    accept="image/*"
+                    placeholder={
+                      editingBanner?.image_en?.key?.replace('/assets/', '') ||
+                      imageEnFile?.name ||
+                      'Select a English image'
+                    }
+                    onChange={(file) => setImageEnFile(file)}
+                  />
+                </div>
                 {editingBanner?.image_en?.url && (
                   <img
                     crossOrigin="anonymous"
@@ -574,15 +579,21 @@ export default function Banners() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_image_ar">
-                  Arabic Image <Asterisk />
-                </Label>
-                <Input
-                  id="edit_image_ar"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageArFile(e.target.files?.[0] || null)}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="edit_image_ar">
+                    Arabic Image <Asterisk />
+                  </Label>
+                  <FileInput
+                    id="edit_image_ar"
+                    accept="image/*"
+                    placeholder={
+                      editingBanner?.image_ar?.key?.replace('/assets/', '') ||
+                      imageArFile?.name ||
+                      'Select a Arabic image'
+                    }
+                    onChange={(file) => setImageArFile(file)}
+                  />
+                </div>
                 {editingBanner?.image_ar?.url && (
                   <img
                     crossOrigin="anonymous"
