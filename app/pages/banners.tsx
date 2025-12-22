@@ -187,7 +187,6 @@ export default function Banners() {
       redirect_url: banner.redirect_url || '',
       brand_id: banner.brand_id?.toString() ?? undefined,
     });
-    console.log('the banner', banner);
   };
 
   const handleDelete = (id: number) => {
@@ -365,8 +364,8 @@ export default function Banners() {
                   <TableHead>Images</TableHead>
                   <TableHead>Promotion Name</TableHead>
                   <TableHead>Redirect URL</TableHead>
-                  <TableHead>Visibility</TableHead>
                   <TableHead>Brand</TableHead>
+                  <TableHead>Visibility</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
