@@ -54,6 +54,8 @@ interface BannerFormData {
   brand_id?: string | number | undefined;
 }
 
+const recommendedAspectRatio =
+  "It's recommended to use an image with a 2:1 (width:height) aspect ratio";
 export default function Banners() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
@@ -261,7 +263,6 @@ export default function Banners() {
                       }))
                     }
                     placeholder="https://example.com"
-                  
                   />
                 </div>
                 <div>
@@ -307,6 +308,9 @@ export default function Banners() {
                       placeholder="Select a banner image"
                       onChange={(file) => setImageEnFile(file)}
                     />
+                    <span className="text-xs text-gray-400">
+                      {recommendedAspectRatio}
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -320,6 +324,9 @@ export default function Banners() {
                       placeholder="Select a banner image"
                       onChange={(file) => setImageArFile(file)}
                     />
+                    <span className="text-xs text-gray-400">
+                      {recommendedAspectRatio}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -577,6 +584,9 @@ export default function Banners() {
                     className="w-full h-20 object-cover rounded border"
                   />
                 )}
+                <span className="text-xs text-gray-400">
+                  {recommendedAspectRatio}
+                </span>
               </div>
               <div className="space-y-2">
                 <div className="space-y-2">
@@ -604,6 +614,9 @@ export default function Banners() {
                     className="w-full h-20 object-cover rounded border"
                   />
                 )}
+                <span className="text-xs text-gray-400">
+                  {recommendedAspectRatio}
+                </span>
               </div>
             </div>
             <DialogFooter>
