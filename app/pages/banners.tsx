@@ -424,7 +424,7 @@ export default function Banners() {
                       {banner?.brand ? (
                         <span className="">{banner?.brand?.name}</span>
                       ) : (
-                        <span className="text-gray-400">No brand</span>
+                        <span className="">Home Page</span>
                       )}
                     </TableCell>
                     <TableCell>
