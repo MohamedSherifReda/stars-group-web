@@ -49,7 +49,7 @@ export const meta = serveBannersMeta;
 
 interface BannerFormData {
   promotion_name: string;
-  redirect_url: string;
+  redirect_url?: string;
   brand_id?: string | number | undefined;
 }
 
@@ -158,6 +158,11 @@ export default function Banners() {
         imageArId = imageArResponse.data?.data?.id;
       }
 
+      //if the redirect url is empty or falsy value, then delete it as it is already optional.
+      if (!formData.redirect_url) {
+        delete formData.redirect_url;
+      }
+
       const bannerData = {
         ...formData,
         ...(imageEnId && { image_en_id: imageEnId }),
@@ -180,12 +185,13 @@ export default function Banners() {
   };
 
   const handleEdit = (banner: Banner) => {
+    console.log('the about to edit banner', banner);
     resetForm();
     setEditingBanner(banner);
     setFormData({
       promotion_name: banner.promotion_name,
       redirect_url: banner.redirect_url || '',
-      brand_id: banner.brand_id?.toString() ?? undefined,
+      brand_id: banner?.brand?.id?.toString() ?? undefined,
     });
   };
 
@@ -243,9 +249,7 @@ export default function Banners() {
               </div>
               <div className=" grid grid-cols-2 gap-x-4">
                 <div>
-                  <Label htmlFor="redirect_url">
-                    Redirect URL <Asterisk />
-                  </Label>
+                  <Label htmlFor="redirect_url">Redirect URL</Label>
                   <Input
                     id="redirect_url"
                     type="url"
@@ -257,11 +261,11 @@ export default function Banners() {
                       }))
                     }
                     placeholder="https://example.com"
-                    required
+                    // required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="brand_id">Brand (Optional)</Label>
+                  <Label htmlFor="brand_id">Brand</Label>
                   <Select
                     value={formData.brand_id?.toString() ?? ''}
                     onValueChange={(value) =>
@@ -501,9 +505,7 @@ export default function Banners() {
             </div>
             <div className=" grid grid-cols-2 gap-x-4">
               <div>
-                <Label htmlFor="edit_redirect_url">
-                  Redirect URL <Asterisk />
-                </Label>
+                <Label htmlFor="edit_redirect_url">Redirect URL</Label>
                 <Input
                   id="edit_redirect_url"
                   type="url"
@@ -515,7 +517,6 @@ export default function Banners() {
                     }))
                   }
                   placeholder="https://example.com"
-                  required
                 />
               </div>
               <div>
