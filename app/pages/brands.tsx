@@ -48,6 +48,11 @@ interface BrandFormData {
   banners?: string[] | number[] | undefined | Banner[];
 }
 
+
+const RECOMMENDED_LOGO_ASPECT_RATIO =
+  'It is recommended to use an image with a 1.5:1 (width:height) aspect ratio';
+const imgRecommendationClassName = 'text-[10px] text-gray-400 !leading-[0]';
+
 export default function Brands() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
@@ -696,6 +701,9 @@ export default function Brands() {
                     placeholder="Select a logo image"
                     onChange={(file) => setLogoFile(file)}
                   />
+                  <span className={imgRecommendationClassName}>
+                    {RECOMMENDED_LOGO_ASPECT_RATIO}
+                  </span>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="product_picture">
@@ -707,6 +715,9 @@ export default function Brands() {
                     placeholder="Select a product picture"
                     onChange={(file) => setProductFile(file)}
                   />
+                  <span className={imgRecommendationClassName}>
+                    {RECOMMENDED_LOGO_ASPECT_RATIO}
+                  </span>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="logo_background">
@@ -718,6 +729,9 @@ export default function Brands() {
                     placeholder="Select a logo background image"
                     onChange={(file) => setLogoBackgroundFile(file)}
                   />
+                  <span className={imgRecommendationClassName}>
+                    {RECOMMENDED_LOGO_ASPECT_RATIO}
+                  </span>
                 </div>
                 {/* Display Order */}
                 <div className="space-y-2">
@@ -980,6 +994,9 @@ export default function Brands() {
                     loading="eager"
                   />
                 )}
+                <span className={imgRecommendationClassName}>
+                  {RECOMMENDED_LOGO_ASPECT_RATIO}
+                </span>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_product_picture">
@@ -1010,6 +1027,9 @@ export default function Brands() {
                     loading="eager"
                   />
                 )}
+                <span className={imgRecommendationClassName}>
+                  {RECOMMENDED_LOGO_ASPECT_RATIO}
+                </span>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="logo_background">
@@ -1040,6 +1060,9 @@ export default function Brands() {
                     loading="eager"
                   />
                 )}
+                <span className={imgRecommendationClassName}>
+                  {RECOMMENDED_LOGO_ASPECT_RATIO}
+                </span>
               </div>
               {/* Banner  (Edit)*/}
               {
