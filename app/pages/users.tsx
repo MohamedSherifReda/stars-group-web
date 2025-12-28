@@ -9,15 +9,13 @@ import { usersApi } from '@features/user/user.apis';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Badge } from '@ui/common/badge';
 import serveUsersMeta from '~/meta/serveUsersMeta';
-import { DataTable, type ColumnDef } from '@ui/common/data-table';
-import { UserRank, type User } from 'core/types/user.types';
+import { DataTable } from '@ui/common/data-table';
 import { useMemo, useState } from 'react';
 import DeleteItemAlert from '@ui/common/DeleteItemAlert';
 import { queryClient } from '@utils/queryClient';
 import toast from 'react-hot-toast';
 import { Button } from '@ui/common/button';
-import { Trash2, Filter, X, RotateCcw, SearchIcon } from 'lucide-react';
-import { cn } from '@utils/cn';
+import { Trash2, Filter, RotateCcw, SearchIcon } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -25,17 +23,10 @@ import {
   SheetTitle,
   SheetFooter,
 } from '@ui/common/sheet';
-import { Label } from '@ui/common/label';
 import { Input } from '@ui/common/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@ui/common/select';
-import { formatDate } from 'date-fns';
 import UsersFilters from '@features/user/components/UsersFilters';
+import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
+import { usersCols } from '@features/user/UserCols';
 
 export const meta = serveUsersMeta;
 
@@ -113,107 +104,27 @@ export default function Users() {
     },
   });
 
-  const usersCols = useMemo<ColumnDef<User>[]>(
-    () => [
-      {
-        accessorKey: 'id',
-        header: 'ID',
-        cell: ({ row }) => <span className="font-mono">{row.original.id}</span>,
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: 'name',
-        header: 'Name',
-        cell: ({ row }) => (
-          <span className="font-medium">{row.original.name || 'N/A'}</span>
-        ),
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: 'email',
-        header: 'Email',
-        cell: ({ row }) => (
-          <span className="text-sm text-gray-500">{row.original.email}</span>
-        ),
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: 'phone_number',
-        header: 'Phone Number',
-        cell: ({ row }) => (
-          <span className="text-sm text-gray-500">
-            {row.original.phone_number_key} {row.original.phone_number}
-          </span>
-        ),
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: 'role',
-        header: 'Role',
-        cell: ({ row }) => (
-          <Badge
-            className={cn(row.original.role === 'admin' && 'hover:text-black')}
-            variant={row.original.role === 'admin' ? 'default' : 'secondary'}
-          >
-            {row.original.role}
-          </Badge>
-        ),
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: 'rank',
-        header: 'Membership',
-        cell: ({ row }) => (
-          <Badge
-            variant={
-              row.original.rank === UserRank.Gold ? 'default' : 'secondary'
-            }
-          >
-            <span className="text-uppercase">
-              {UserRank[row.original?.rank] || 'N/A'}
-            </span>
-          </Badge>
-        ),
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: 'account_verified',
-        header: 'Verified',
-        cell: ({ row }) => (
-          <Badge
-            className={cn(row.original.account_verified && 'hover:text-black')}
-            variant={row.original.account_verified ? 'default' : 'destructive'}
-          >
-            {row.original.account_verified ? 'Verified' : 'Unverified'}
-          </Badge>
-        ),
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: 'created_at',
-        header: 'Joining Date',
-        cell: ({ row }) => (
-          <span className="text-sm text-gray-500">
-            {row.original?.created_at
-              ? formatDate(row.original?.created_at, 'dd-MMM-yyyy')
-              : 'N/A'}
-          </span>
-        ),
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: 'birthdate',
-        header: 'Birthdate',
-        cell: ({ row }) => (
-          <span className="text-sm text-gray-500">
-            {row.original?.birthdate
-              ? formatDate(row.original?.birthdate, 'dd-MMM-yyyy')
-              : 'N/A'}
-          </span>
-        ),
-        enableColumnFilter: false,
-      },
-      {
+  const usersRows = users?.data || [];
+  const totalUsers = users?.meta?.total || 0;
+  const excludedUsersColsFromExport = [
+    'wallet_code',
+    'de_square_token',
+    'de_square_token_expire_at',
+    'fcm_token',
+    'is_logged_in',
+    'pending_email',
+    'pending_phone_number',
+    'pending_phone_number_key',
+    'ui_configurations',
+    'updated_at',
+    'deleted_at',
+    'rank_string',
+  ];
+  const usersColsArr = useMemo(() => {
+    const freshCols = [...usersCols];
+    // if the delete col is already present then return the cols
+    if (!freshCols.some((col) => col.id === 'delete')) {
+      freshCols.push({
         id: 'delete',
         header: 'Actions',
         cell: ({ row }) => {
@@ -231,7 +142,9 @@ export default function Users() {
                 <Button
                   variant="destructive"
                   className="bg-white group"
-                  onClick={() => setDeleteUserId(user.id)}
+                  onClick={() => {
+                    setDeleteUserId(user.id);
+                  }}
                 >
                   <Trash2 className="w-4 h-4 text-red-500 group-hover:text-white" />
                 </Button>
@@ -239,12 +152,10 @@ export default function Users() {
             />
           );
         },
-      },
-    ],
-    [deleteUserId, deleteUserMutation.isPending]
-  );
-  const usersRows = users?.data || [];
-  const totalUsers = users?.meta?.total || 0;
+      });
+    }
+    return freshCols;
+  }, [deleteUserId, deleteUserMutation.isPending, setDeleteUserId]);
 
   const handleApplyFilters = () => {
     setAppliedFilters(tempFilters);
@@ -271,6 +182,7 @@ export default function Users() {
     });
     setCurrentPage(1);
   };
+
   const handleClearSearch = () => {
     setAppliedFilters({
       ...appliedFilters,
@@ -288,28 +200,35 @@ export default function Users() {
             Manage and view all registered users in the system.
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleOpenFilters}
-          className="flex items-center gap-2"
-        >
-          <Filter className="w-4 h-4" />
-          Filters
-          {Object.values(appliedFilters).filter(
-            (v) => v !== undefined && v !== '' && v !== 'all'
-          ).length > 0 && (
-            <Badge
-              variant="secondary"
-              className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
-            >
-              {
-                Object.values(appliedFilters).filter(
-                  (v) => v !== undefined && v !== '' && v !== 'all'
-                ).length
-              }
-            </Badge>
-          )}
-        </Button>
+        <div className="flex items-center gap-x-2">
+          <ExportToExcel
+            data={users?.data || []}
+            excludedCols={excludedUsersColsFromExport}
+            fileName="users.xlsx"
+          />
+          <Button
+            variant="outline"
+            onClick={handleOpenFilters}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {Object.values(appliedFilters).filter(
+              (v) => v !== undefined && v !== '' && v !== 'all'
+            ).length > 0 && (
+              <Badge
+                variant="secondary"
+                className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
+              >
+                {
+                  Object.values(appliedFilters).filter(
+                    (v) => v !== undefined && v !== '' && v !== 'all'
+                  ).length
+                }
+              </Badge>
+            )}
+          </Button>
+        </div>
       </div>
 
       <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
@@ -385,7 +304,7 @@ export default function Users() {
             </div>
           ) : (
             <DataTable
-              columns={usersCols}
+              columns={usersColsArr}
               data={usersRows}
               pagination={{
                 pageIndex: currentPage,
