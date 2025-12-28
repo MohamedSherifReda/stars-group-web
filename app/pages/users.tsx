@@ -10,7 +10,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Badge } from '@ui/common/badge';
 import serveUsersMeta from '~/meta/serveUsersMeta';
 import { DataTable, type ColumnDef } from '@ui/common/data-table';
-import type { User } from 'core/types/user.types';
+import { UserRank, type User } from 'core/types/user.types';
 import { useMemo, useState } from 'react';
 import DeleteItemAlert from '@ui/common/DeleteItemAlert';
 import { queryClient } from '@utils/queryClient';
@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ui/common/select';
+import { formatDate } from 'date-fns';
 
 export const meta = serveUsersMeta;
 
@@ -130,6 +131,16 @@ export default function Users() {
         enableColumnFilter: false,
       },
       {
+        accessorKey: 'phone_number',
+        header: 'Phone Number',
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-500">
+            {row.original.phone_number_key} {row.original.phone_number}
+          </span>
+        ),
+        enableColumnFilter: false,
+      },
+      {
         accessorKey: 'role',
         header: 'Role',
         cell: ({ row }) => (
@@ -143,16 +154,16 @@ export default function Users() {
         enableColumnFilter: false,
       },
       {
-        accessorKey: 'rank_string',
+        accessorKey: 'rank',
         header: 'Membership',
         cell: ({ row }) => (
           <Badge
             variant={
-              row.original.rank_string === 'gold' ? 'default' : 'secondary'
+              row.original.rank === UserRank.Gold ? 'default' : 'secondary'
             }
           >
             <span className="text-uppercase">
-              {row.original.rank_string || 'N/A'}
+              {UserRank[row.original?.rank] || 'N/A'}
             </span>
           </Badge>
         ),
@@ -168,6 +179,30 @@ export default function Users() {
           >
             {row.original.account_verified ? 'Verified' : 'Unverified'}
           </Badge>
+        ),
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: 'created_at',
+        header: 'Joining Date',
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-500">
+            {row.original?.created_at
+              ? formatDate(row.original?.created_at, 'dd-MMM-yyyy')
+              : 'N/A'}
+          </span>
+        ),
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: 'birthdate',
+        header: 'Birthdate',
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-500">
+            {row.original?.birthdate
+              ? formatDate(row.original?.birthdate, 'dd-MMM-yyyy')
+              : 'N/A'}
+          </span>
         ),
         enableColumnFilter: false,
       },
