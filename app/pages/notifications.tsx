@@ -722,6 +722,28 @@ export default function Notifications() {
           </p>
         </div>
         <div className="flex flex-row-reverse gap-4">
+          <Button
+            variant="outline"
+            onClick={handleOpenFilters}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {Object.values(appliedFilters).filter(
+              (v) => v !== undefined && v !== '' && v !== 'all'
+            ).length > 0 && (
+              <Badge
+                variant="secondary"
+                className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
+              >
+                {
+                  Object.values(appliedFilters).filter(
+                    (v) => v !== undefined && v !== '' && v !== 'all'
+                  ).length
+                }
+              </Badge>
+            )}
+          </Button>
           <Dialog
             open={isCreateOpen}
             onOpenChange={() => {
@@ -1066,28 +1088,6 @@ export default function Notifications() {
               </form>
             </DialogContent>
           </Dialog>
-          <Button
-            variant="outline"
-            onClick={handleOpenFilters}
-            className="flex items-center gap-2"
-          >
-            <Filter className="w-4 h-4" />
-            Filters
-            {Object.values(appliedFilters).filter(
-              (v) => v !== undefined && v !== '' && v !== 'all'
-            ).length > 0 && (
-              <Badge
-                variant="secondary"
-                className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
-              >
-                {
-                  Object.values(appliedFilters).filter(
-                    (v) => v !== undefined && v !== '' && v !== 'all'
-                  ).length
-                }
-              </Badge>
-            )}
-          </Button>
         </div>
       </div>
 
