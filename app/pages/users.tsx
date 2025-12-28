@@ -16,7 +16,7 @@ import DeleteItemAlert from '@ui/common/DeleteItemAlert';
 import { queryClient } from '@utils/queryClient';
 import toast from 'react-hot-toast';
 import { Button } from '@ui/common/button';
-import { Trash2, Filter, X, RotateCcw } from 'lucide-react';
+import { Trash2, Filter, X, RotateCcw, SearchIcon } from 'lucide-react';
 import { cn } from '@utils/cn';
 import {
   Sheet,
@@ -44,6 +44,7 @@ export default function Users() {
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<any>({});
   const [tempFilters, setTempFilters] = useState<any>({});
+  const [searchValue, setSearchValue] = useState<string>('');
 
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const {
@@ -262,6 +263,21 @@ export default function Users() {
     setIsFilterSidebarOpen(true);
   };
 
+  const handleSearch = () => {
+    setAppliedFilters({
+      ...appliedFilters,
+      search: searchValue,
+    });
+    setCurrentPage(1);
+  };
+  const handleClearSearch = () => {
+    setAppliedFilters({
+      ...appliedFilters,
+      search: '',
+    });
+    setCurrentPage(1);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -476,8 +492,33 @@ export default function Users() {
       <Card>
         <CardHeader>
           <CardTitle>All Users</CardTitle>
-          <CardDescription>
-            A list of all users registered in the system.
+          <CardDescription className="flex justify-between ">
+            <p>A list of all users registered in the system.</p>
+            <div className="min-w-[450px] flex gap-2">
+              <Input
+                type="search"
+                placeholder="Search users by name or email..."
+                className="!h-full flex-1"
+                value={searchValue}
+                onChange={(e) => {
+                  setSearchValue(e.target.value);
+                  if (e.target.value?.trim() === '') {
+                    handleClearSearch();
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+              />
+              <div>
+                <Button onClick={handleSearch} className="!h-full flex gap-x-2">
+                  <SearchIcon className="w-4 h-4" />
+                  Search
+                </Button>
+              </div>
+            </div>
           </CardDescription>
         </CardHeader>
         <CardContent>
