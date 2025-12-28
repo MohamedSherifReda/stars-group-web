@@ -17,7 +17,7 @@ const ExportToExcel = ({
   excludedCols,
 }: ExportToExcelProps) => {
   const [isLoading, setIsLoading] = useState(false);
-console.log('received data', data);
+
   function exportToExcelHandler() {
     setIsLoading(true);
     // Create a new workbook
