@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -7,40 +6,90 @@ import {
   CardTitle,
 } from '@ui/common/card';
 import { usersApi } from '@features/user/user.apis';
-
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Badge } from '@ui/common/badge';
 import serveUsersMeta from '~/meta/serveUsersMeta';
 import { DataTable, type ColumnDef } from '@ui/common/data-table';
-
 import type { User } from 'core/types/user.types';
 import { useMemo, useState } from 'react';
 import DeleteItemAlert from '@ui/common/DeleteItemAlert';
 import { queryClient } from '@utils/queryClient';
 import toast from 'react-hot-toast';
 import { Button } from '@ui/common/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Filter, X, RotateCcw } from 'lucide-react';
 import { cn } from '@utils/cn';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@ui/common/sheet';
+import { Label } from '@ui/common/label';
+import { Input } from '@ui/common/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@ui/common/select';
 
 export const meta = serveUsersMeta;
 
 export default function Users() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
+  const [tempFilters, setTempFilters] = useState<any>({});
+
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const {
     data: users = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isUsersLoading,
   } = useQuery({
-    queryKey: ['users', currentPage, pageSize],
-    queryFn: () =>
-      usersApi
+    queryKey: ['users', currentPage, pageSize, appliedFilters],
+    queryFn: () => {
+      const filters: any = {};
+      Object.entries(appliedFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') {
+          if (key === 'account_verified') {
+            filters[key] = {
+              $val: value === 'true',
+              $op: 'Is',
+            };
+          } else if (key === 'role' || key === 'rank') {
+            filters[key] = {
+              $val: key === 'rank' ? Number(value) : value,
+              $op: 'Eq',
+            };
+          } else if (key === 'id') {
+            filters[key] = {
+              $val: Number(value),
+              $op: 'Eq',
+            };
+          } else {
+            filters[key] = {
+              $val: value,
+              $op: 'Contains',
+            };
+          }
+        }
+      });
+
+      return usersApi
         .getUsers({
-          'pagination[skip]': (currentPage - 1) * pageSize,
-          'pagination[take]': pageSize,
+          pagination: {
+            skip: (currentPage - 1) * pageSize,
+            take: pageSize,
+          },
+          filters,
         })
         .then((res) => {
           return res.data;
-        }),
+        });
+    },
   });
 
   const deleteUserMutation = useMutation({
@@ -55,85 +104,99 @@ export default function Users() {
       toast.error(error.response?.data?.message || 'Failed to delete user');
     },
   });
-  const usersCols = useMemo(
+
+  const usersCols = useMemo<ColumnDef<User>[]>(
     () => [
       {
-        id: 'id',
+        accessorKey: 'id',
         header: 'ID',
-        cell: (user: User) => <span className="font-mono">{user.id}</span>,
+        cell: ({ row }) => <span className="font-mono">{row.original.id}</span>,
+        enableColumnFilter: false,
       },
       {
-        id: 'name',
+        accessorKey: 'name',
         header: 'Name',
-        cell: (user: User) => (
-          <span className="font-medium">{user.name || 'N/A'}</span>
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name || 'N/A'}</span>
         ),
+        enableColumnFilter: false,
       },
       {
-        id: 'email',
+        accessorKey: 'email',
         header: 'Email',
-        cell: (user: User) => (
-          <span className="text-sm text-gray-500">{user.email}</span>
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-500">{row.original.email}</span>
         ),
+        enableColumnFilter: false,
       },
       {
-        id: 'role',
+        accessorKey: 'role',
         header: 'Role',
-        cell: (user: User) => (
+        cell: ({ row }) => (
           <Badge
-            className={cn(user.role === 'admin' && 'hover:text-black')}
-            variant={user.role === 'admin' ? 'default' : 'secondary'}
+            className={cn(row.original.role === 'admin' && 'hover:text-black')}
+            variant={row.original.role === 'admin' ? 'default' : 'secondary'}
           >
-            {user.role}
+            {row.original.role}
           </Badge>
         ),
+        enableColumnFilter: false,
       },
       {
-        id: 'rank_string',
+        accessorKey: 'rank_string',
         header: 'Membership',
-        cell: (user: User) => (
+        cell: ({ row }) => (
           <Badge
-            variant={user.rank_string === 'gold' ? 'default' : 'secondary'}
+            variant={
+              row.original.rank_string === 'gold' ? 'default' : 'secondary'
+            }
           >
-            <span className="text-uppercase">{user.rank_string || 'N/A'}</span>
+            <span className="text-uppercase">
+              {row.original.rank_string || 'N/A'}
+            </span>
           </Badge>
         ),
+        enableColumnFilter: false,
       },
       {
-        id: 'verified',
+        accessorKey: 'account_verified',
         header: 'Verified',
-        cell: (user: User) => (
+        cell: ({ row }) => (
           <Badge
-            className={cn(user.account_verified && 'hover:text-black')}
-            variant={user.account_verified ? 'default' : 'destructive'}
+            className={cn(row.original.account_verified && 'hover:text-black')}
+            variant={row.original.account_verified ? 'default' : 'destructive'}
           >
-            {user.account_verified ? 'Verified' : 'Unverified'}
+            {row.original.account_verified ? 'Verified' : 'Unverified'}
           </Badge>
         ),
+        enableColumnFilter: false,
       },
       {
         id: 'delete',
         header: 'Actions',
-        cell: (user: User) => (
-          <DeleteItemAlert
-            isDeleting={deleteUserMutation.isPending}
-            itemName={user.name || 'User'}
-            onDelete={() => {
-              deleteUserMutation.mutate(user.id);
-            }}
-            isOpen={deleteUserId === user.id}
-            setIsOpen={(isOpen) => setDeleteUserId(isOpen ? user.id : null)}
-            triggerButton={
-              <Button
-                variant="destructive"
-                className="bg-white group"
-                onClick={() => setDeleteUserId(user.id)}
-              >
-                <Trash2 className="w-4 h-4 text-red-500 group-hover:text-white" />
-              </Button>
-            }
-          />
-        ),
+        cell: ({ row }) => {
+          const user = row.original;
+          return (
+            <DeleteItemAlert
+              isDeleting={deleteUserMutation.isPending}
+              itemName={user.name || 'User'}
+              onDelete={() => {
+                deleteUserMutation.mutate(user.id);
+              }}
+              isOpen={deleteUserId === user.id}
+              setIsOpen={(isOpen) => setDeleteUserId(isOpen ? user.id : null)}
+              triggerButton={
+                <Button
+                  variant="destructive"
+                  className="bg-white group"
+                  onClick={() => setDeleteUserId(user.id)}
+                >
+                  <Trash2 className="w-4 h-4 text-red-500 group-hover:text-white" />
+                </Button>
+              }
+            />
+          );
+        },
       },
     ],
     [deleteUserId, deleteUserMutation.isPending]
@@ -141,14 +204,182 @@ export default function Users() {
   const usersRows = users?.data || [];
   const totalUsers = users?.meta?.total || 0;
 
+  const handleApplyFilters = () => {
+    setAppliedFilters(tempFilters);
+    setCurrentPage(1);
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleClearFilters = () => {
+    setTempFilters({});
+    setAppliedFilters({});
+    setCurrentPage(1);
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleOpenFilters = () => {
+    setTempFilters(appliedFilters);
+    setIsFilterSidebarOpen(true);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-        <p className="mt-2 text-gray-600">
-          Manage and view all registered users in the system.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Users</h1>
+          <p className="mt-2 text-gray-600">
+            Manage and view all registered users in the system.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={handleOpenFilters}
+          className="flex items-center gap-2"
+        >
+          <Filter className="w-4 h-4" />
+          Filters
+          {Object.values(appliedFilters).filter(
+            (v) => v !== undefined && v !== '' && v !== 'all'
+          ).length > 0 && (
+            <Badge
+              variant="secondary"
+              className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
+            >
+              {
+                Object.values(appliedFilters).filter(
+                  (v) => v !== undefined && v !== '' && v !== 'all'
+                ).length
+              }
+            </Badge>
+          )}
+        </Button>
       </div>
+
+      <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
+        <SheetContent className="sm:max-w-md flex flex-col h-full">
+          <SheetHeader className="border-b pb-4">
+            <SheetTitle className="text-xl">Filters</SheetTitle>
+          </SheetHeader>
+
+          <div className="flex-1 py-6 space-y-6 overflow-y-auto">
+            <div className="space-y-2">
+              <Label htmlFor="id">User ID</Label>
+              <Input
+                id="id"
+                type="number"
+                placeholder="Filter by ID..."
+                value={tempFilters.id || ''}
+                onChange={(e) =>
+                  setTempFilters({ ...tempFilters, id: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="Filter by name..."
+                value={tempFilters.name || ''}
+                onChange={(e) =>
+                  setTempFilters({ ...tempFilters, name: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                placeholder="Filter by email..."
+                value={tempFilters.email || ''}
+                onChange={(e) =>
+                  setTempFilters({ ...tempFilters, email: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select
+                value={tempFilters.role || 'all'}
+                onValueChange={(value) =>
+                  setTempFilters({ ...tempFilters, role: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Verification Status</Label>
+              <Select
+                value={tempFilters.account_verified || 'all'}
+                onValueChange={(value) =>
+                  setTempFilters({ ...tempFilters, account_verified: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="true">Verified</SelectItem>
+                  <SelectItem value="false">Unverified</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Membership</Label>
+              <Select
+                value={tempFilters.rank || 'all'}
+                onValueChange={(value) =>
+                  setTempFilters({ ...tempFilters, rank: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select membership" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Memberships</SelectItem>
+                  <SelectItem value="2">Gold</SelectItem>
+                  <SelectItem value="1">Silver</SelectItem>
+                  <SelectItem value="3">Platinum</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <SheetFooter className="border-t pt-4 flex-row gap-2 mt-auto">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsFilterSidebarOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              className="flex-1 gap-2 border"
+              onClick={handleClearFilters}
+            >
+              <RotateCcw className="w-4 h-4" />
+              Clear All
+            </Button>
+            <Button className="flex-1" onClick={handleApplyFilters}>
+              Filter
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <Card>
         <CardHeader>

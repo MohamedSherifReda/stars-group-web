@@ -8,7 +8,8 @@
     "start": "cross-env NODE_ENV=production PORT=5000 react-router-serve ./build/server/index.js",
     "start:local": "cross-env NODE_ENV=production PORT=5000 react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
-    "preview": "pnpm run start:local"
+    "preview": "pnpm run start:local",
+    "openapi-ts": "openapi-ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -29,6 +30,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.0.15",
     "@tanstack/react-query": "^5.69.0",
+    "@tanstack/react-table": "^8.21.3",
     "@tinymce/tinymce-react": "^6.3.0",
     "@tiptap/extension-text-style": "^3.11.0",
     "@tiptap/pm": "^3.11.0",
@@ -50,10 +52,10 @@
     "pg": "^8.13.1",
     "pluralize": "^8.0.0",
     "qs": "^6.14.0",
-    "react": "^19.2.0",
+    "react": "19.2.0",
     "react-countup": "^6.5.3",
     "react-day-picker": "^8.10.1",
-    "react-dom": "^19.2.0",
+    "react-dom": "19.2.0",
     "react-hook-form": "^7.66.0",
     "react-hot-toast": "^2.5.2",
     "react-phone-number-input": "^3.4.14",
@@ -63,11 +65,13 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "typeorm": "^0.3.20",
+    "use-debounce": "^10.0.6",
     "usehooks-ts": "^3.1.1",
     "zod": "^4.1.12",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "0.89.2",
     "@netlify/vite-plugin-react-router": "^1.0.1",
     "@react-router/dev": "^7.1.1",
     "@types/node": "^20",

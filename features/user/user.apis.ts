@@ -1,14 +1,10 @@
 import api from '@utils/api';
 import type { User } from 'core/types/user.types';
-import type { ApiResponse, PaginatedResponse } from 'core/types/api.types';
-
-export interface GetUsersParams {
-  'pagination[take]'?: number;
-  'pagination[skip]'?: number;
-}
+import type { ApiResponse } from 'core/types/api.types';
+import type { ReadUsersQuery } from 'infrastructure/api';
 
 export const usersApi = {
-  getUsers: (params?: GetUsersParams) => {
+  getUsers: (params?: ReadUsersQuery) => {
     return api.get<ApiResponse<User[]>>('/users', {
       params,
     });
