@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, ExternalLink, Image } from 'lucide-react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  ExternalLink,
+  Image,
+  RotateCcw,
+  Filter,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bannersApi } from '@features/banner/banner.apis';
 import type { Banner } from 'core/types/banner.types';
@@ -45,6 +53,15 @@ import {
 } from '@ui/common/select';
 import { Toggle } from '~/components/ui/toggle';
 import { FileInput } from '@ui/common/file-input';
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@ui/common/sheet';
+import BannersFilters from '@features/banner/components/BannersFilters';
+import { Badge } from '@ui/common/badge';
 
 export const meta = serveBannersMeta;
 
@@ -69,22 +86,56 @@ export default function Banners() {
   });
   const [imageEnFile, setImageEnFile] = useState<File | null>(null);
   const [imageArFile, setImageArFile] = useState<File | null>(null);
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
+  const [tempFilters, setTempFilters] = useState<any>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const queryClient = useQueryClient();
 
   const {
     data: banners = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isBannersLoading,
   } = useQuery({
-    queryKey: ['banners'],
-    queryFn: () =>
-      bannersApi
+    queryKey: ['banners', currentPage, pageSize, appliedFilters],
+    queryFn: () => {
+      const filters: any = {};
+      Object.entries(appliedFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') {
+          if (key === 'created_at') {
+            filters[key] = {
+              $val: new Date(value as string).toISOString(),
+              $op: 'Eq',
+            };
+          } else if (key === 'brand_id') {
+            filters[key] = {
+              $val: value,
+              $op: 'Eq',
+            };
+          } else {
+            filters[key] = {
+              $val: value,
+              $op: 'Contains',
+            };
+          }
+        }
+      });
+      return bannersApi
         .getBanners({
-          'relations[image_ar]': true,
-          'relations[image_en]': true,
-          'relations[brand]': true,
+          relations: {
+            image_ar: true,
+            image_en: true,
+            brand: true,
+          },
+          pagination: {
+            skip: (currentPage - 1) * pageSize,
+            take: pageSize,
+          },
           includeAllBranded: true,
+          filters,
         })
-        .then((res) => res.data),
+        .then((res) => res.data);
+    },
   });
 
   const {
@@ -98,7 +149,7 @@ export default function Banners() {
   const uploadMutation = useMutation({
     mutationFn: (file: File) => mediaApi.upload(file),
   });
-
+  // Create banner mutation
   const createMutation = useMutation({
     mutationFn: (banner: Partial<Banner>) => bannersApi.createBanner(banner),
     onSuccess: () => {
@@ -111,7 +162,7 @@ export default function Banners() {
       toast.error(error.response?.data?.message || 'Failed to create banner');
     },
   });
-
+  // update banner mutation.
   const updateMutation = useMutation({
     mutationFn: ({ id, banner }: { id: number; banner: Partial<Banner> }) =>
       bannersApi.updateBanner(id, banner),
@@ -125,7 +176,7 @@ export default function Banners() {
       toast.error(error.response?.data?.message || 'Failed to update banner');
     },
   });
-
+  // delete banner mutation.
   const deleteMutation = useMutation({
     mutationFn: (id: number) => bannersApi.deleteBanner(id),
     onSuccess: () => {
@@ -206,6 +257,24 @@ export default function Banners() {
     }
   };
 
+  const handleApplyFilters = () => {
+    setAppliedFilters(tempFilters);
+    setCurrentPage(1);
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleClearFilters = () => {
+    setTempFilters({});
+    setAppliedFilters({});
+    setCurrentPage(1);
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleOpenFilters = () => {
+    setTempFilters(appliedFilters);
+    setIsFilterSidebarOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -215,148 +284,206 @@ export default function Banners() {
             Manage promotional banners and advertisements.
           </p>
         </div>
-        <Dialog
-          open={isCreateOpen}
-          onOpenChange={() => {
-            resetForm();
-            setIsCreateOpen((prev) => !prev);
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Banner
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Banner</DialogTitle>
-              <DialogDescription>
-                Add a new promotional banner to the system.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="promotion_name">
-                  Promotion Name <Asterisk />
-                </Label>
-                <Input
-                  id="promotion_name"
-                  value={formData.promotion_name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      promotion_name: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </div>
-              <div className=" grid grid-cols-2 gap-x-4">
-                <div>
-                  <Label htmlFor="redirect_url">Redirect URL</Label>
+        <div className="flex flex-row-reverse gap-4">
+          {/* filters button */}
+          <Button
+            variant="outline"
+            onClick={handleOpenFilters}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {Object.values(appliedFilters).filter(
+              (v) => v !== undefined && v !== '' && v !== 'all'
+            ).length > 0 && (
+              <Badge
+                variant="secondary"
+                className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
+              >
+                {
+                  Object.values(appliedFilters).filter(
+                    (v) => v !== undefined && v !== '' && v !== 'all'
+                  ).length
+                }
+              </Badge>
+            )}
+          </Button>
+          <Dialog
+            open={isCreateOpen}
+            onOpenChange={() => {
+              resetForm();
+              setIsCreateOpen((prev) => !prev);
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Banner
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create New Banner</DialogTitle>
+                <DialogDescription>
+                  Add a new promotional banner to the system.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="promotion_name">
+                    Promotion Name <Asterisk />
+                  </Label>
                   <Input
-                    id="redirect_url"
-                    type="url"
-                    value={formData.redirect_url}
+                    id="promotion_name"
+                    value={formData.promotion_name}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        redirect_url: e.target.value,
+                        promotion_name: e.target.value,
                       }))
                     }
-                    placeholder="https://example.com"
+                    required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="brand_id">Brand</Label>
-                  <Select
-                    value={formData.brand_id?.toString() ?? ''}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        brand_id: value,
-                      }))
+                <div className=" grid grid-cols-2 gap-x-4">
+                  <div>
+                    <Label htmlFor="redirect_url">Redirect URL</Label>
+                    <Input
+                      id="redirect_url"
+                      type="url"
+                      value={formData.redirect_url}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          redirect_url: e.target.value,
+                        }))
+                      }
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="brand_id">Brand</Label>
+                    <Select
+                      value={formData.brand_id?.toString() ?? ''}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          brand_id: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Attach it to a brand" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {brands?.data?.map((brand) => {
+                            return (
+                              <SelectItem
+                                key={brand?.id}
+                                value={brand?.id?.toString()}
+                              >
+                                {brand?.name}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="image_en">
+                        English Image <Asterisk />
+                      </Label>
+                      <FileInput
+                        id="image_en"
+                        accept="image/*"
+                        placeholder="Select a banner image"
+                        onChange={(file) => setImageEnFile(file)}
+                      />
+                      <span className={recommendedAspectRationClassName}>
+                        {recommendedAspectRatio}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="image_ar">
+                        Arabic Image <Asterisk />
+                      </Label>
+                      <FileInput
+                        id="image_ar"
+                        accept="image/*"
+                        placeholder="Select a banner image"
+                        onChange={(file) => setImageArFile(file)}
+                      />
+                      <span className={recommendedAspectRationClassName}>
+                        {recommendedAspectRatio}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      createMutation.isPending || uploadMutation.isPending
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Attach it to a brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {brands?.data?.map((brand) => {
-                          return (
-                            <SelectItem
-                              key={brand?.id}
-                              value={brand?.id?.toString()}
-                            >
-                              {brand?.name}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="image_en">
-                      English Image <Asterisk />
-                    </Label>
-                    <FileInput
-                      id="image_en"
-                      accept="image/*"
-                      placeholder="Select a banner image"
-                      onChange={(file) => setImageEnFile(file)}
-                    />
-                    <span className={recommendedAspectRationClassName}>
-                      {recommendedAspectRatio}
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="image_ar">
-                      Arabic Image <Asterisk />
-                    </Label>
-                    <FileInput
-                      id="image_ar"
-                      accept="image/*"
-                      placeholder="Select a banner image"
-                      onChange={(file) => setImageArFile(file)}
-                    />
-                    <span className={recommendedAspectRationClassName}>
-                      {recommendedAspectRatio}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    createMutation.isPending || uploadMutation.isPending
-                  }
-                >
-                  {createMutation.isPending || uploadMutation.isPending
-                    ? 'Creating...'
-                    : 'Create Banner'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                    {createMutation.isPending || uploadMutation.isPending
+                      ? 'Creating...'
+                      : 'Create Banner'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+      <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
+        <SheetContent className="sm:max-w-md flex flex-col h-full">
+          <SheetHeader className="border-b pb-4">
+            <SheetTitle className="text-xl">Filters</SheetTitle>
+          </SheetHeader>
 
+          <BannersFilters
+            tempFilters={tempFilters}
+            setTempFilters={setTempFilters}
+            brands={brands?.data || []}
+          />
+
+          <SheetFooter className="border-t pt-4 flex-row gap-2 mt-auto">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsFilterSidebarOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              className="flex-1 gap-2 border"
+              onClick={handleClearFilters}
+            >
+              <RotateCcw className="w-4 h-4" />
+              Clear All
+            </Button>
+            <Button className="flex-1" onClick={handleApplyFilters}>
+              Filter
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
       <Card>
         <CardHeader>
           <CardTitle>All Banners</CardTitle>
