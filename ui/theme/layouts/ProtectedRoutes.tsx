@@ -35,7 +35,6 @@ const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
   }, []);
 
   const currentRoute = useLocation().pathname;
-  console.log(currentRoute, 'current route');
 
   // if token is expired or does not exist, log the user out and redirect to login page
   useEffect(() => {
@@ -81,8 +80,6 @@ const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (!user && isProtectedRoute(currentRoute)) {
     return <Navigate to="/auth/login" replace />;
   }
-
-
 
   return children;
 };

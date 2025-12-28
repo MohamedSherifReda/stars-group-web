@@ -140,6 +140,7 @@ export default function Notifications() {
   // Pagination state for scheduled notifications
   const [scheduledCurrentPage, setScheduledCurrentPage] = useState(1);
   const [scheduledPageSize, setScheduledPageSize] = useState(10);
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -472,154 +473,151 @@ export default function Notifications() {
   // Define table columns for all notifications
   const columns: ColumnDef<Notification>[] = [
     {
-      id: 'id',
+      accessorKey: 'id',
       header: 'ID',
-      cell: (notification) => (
-        <span className="font-medium">{notification.id}</span>
-      ),
+      cell: ({ row }) => <span className="font-medium">{row.original.id}</span>,
     },
     {
-      id: 'user',
+      accessorKey: 'user.name',
       header: 'Receiver',
-      cell: (notification) => (
-        <span className="font-medium">{notification?.user?.name || 'N/A'}</span>
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.user?.name || 'N/A'}</span>
       ),
     },
     {
-      id: 'title',
+      accessorKey: 'title',
       header: 'Title',
-      cell: (notification) => (
-        <span className="font-medium">{notification.title}</span>
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.title}</span>
       ),
     },
     {
-      id: 'message',
+      accessorKey: 'message',
       header: 'Message',
-      cell: (notification) => (
-        <span className="max-w-xs truncate block">{notification.message}</span>
+      cell: ({ row }) => (
+        <span className="max-w-xs truncate block">{row.original.message}</span>
       ),
       className: 'max-w-xs',
     },
     {
-      id: 'created_at',
+      accessorKey: 'created_at',
       header: 'Created At',
-      cell: (notification) => formatDateTime(notification.created_at),
+      cell: ({ row }) => formatDateTime(row.original.created_at),
     },
 
     {
       id: 'actions',
       header: 'Actions',
-      cell: (notification) => (
-        <div className="flex space-x-2">
-          {notification.status === 'scheduled' && (
-            <>
+      cell: ({ row }) => {
+        const notification = row.original;
+        return (
+          <div className="flex space-x-2">
+            {notification.status === 'scheduled' && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEdit(notification)}
+                  title="Edit notification"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSendNow(notification)}
+                  title="Send now"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+            {notification.status !== 'sent' && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleEdit(notification)}
-                title="Edit notification"
+                onClick={() => handleDelete(notification)}
+                title="Delete notification"
               >
-                <Edit className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 text-red-500" />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSendNow(notification)}
-                title="Send now"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </>
-          )}
-          {notification.status !== 'sent' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDelete(notification)}
-              title="Delete notification"
-            >
-              <Trash2 className="w-4 h-4 text-red-500" />
-            </Button>
-          )}
-        </div>
-      ),
+            )}
+          </div>
+        );
+      },
     },
   ];
 
   // Define table columns for scheduled notifications
   const scheduledColumns: ColumnDef<ScheduledNotification>[] = [
     {
-      id: 'id',
+      accessorKey: 'id',
       header: 'ID',
-      cell: (notification) => (
-        <span className="font-medium">{notification.id}</span>
-      ),
+      cell: ({ row }) => <span className="font-medium">{row.original.id}</span>,
     },
     {
-      id: 'title',
+      accessorKey: 'title',
       header: 'Title',
-      cell: (notification) => (
-        <span className="font-medium">{notification.title}</span>
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.title}</span>
       ),
     },
     {
-      id: 'message',
+      accessorKey: 'message',
       header: 'Message',
-      cell: (notification) => (
-        <span className="max-w-xs truncate block">{notification.message}</span>
+      cell: ({ row }) => (
+        <span className="max-w-xs truncate block">{row.original.message}</span>
       ),
       className: 'max-w-xs',
     },
     {
-      id: 'type',
+      accessorKey: 'type',
       header: 'Type',
-      cell: (notification) => (
-        <Badge variant="outline">{notification.type}</Badge>
-      ),
+      cell: ({ row }) => <Badge variant="outline">{row.original.type}</Badge>,
     },
     {
-      id: 'status',
+      accessorKey: 'status',
       header: 'Status',
-      cell: (notification) => (
+      cell: ({ row }) => (
         <Badge
           className={cn({
             'bg-green-500 hover:bg-green-600':
-              notification.status === 'completed',
-            'bg-blue-500 hover:bg-blue-600': notification.status === 'pending',
+              row.original.status === 'completed',
+            'bg-blue-500 hover:bg-blue-600': row.original.status === 'pending',
             'bg-yellow-500 hover:bg-yellow-600':
-              notification.status === 'processing',
-            'bg-red-500 hover:bg-red-600': notification.status === 'failed',
+              row.original.status === 'processing',
+            'bg-red-500 hover:bg-red-600': row.original.status === 'failed',
           })}
         >
-          {notification.status}
+          {row.original.status}
         </Badge>
       ),
     },
     {
-      id: 'schedule_at',
+      accessorKey: 'schedule_at',
       header: 'Scheduled At',
-      cell: (notification) => formatDateTime(notification.schedule_at),
+      cell: ({ row }) => formatDateTime(row.original.schedule_at),
     },
     {
-      id: 'processed_count',
+      accessorKey: 'processed_count',
       header: 'Processed',
-      cell: (notification) => (
-        <span className="font-medium">{notification.processed_count}</span>
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.processed_count}</span>
       ),
     },
     {
-      id: 'failed_count',
+      accessorKey: 'failed_count',
       header: 'Failed',
-      cell: (notification) => (
+      cell: ({ row }) => (
         <span className="font-medium text-red-500">
-          {notification.failed_count}
+          {row.original.failed_count}
         </span>
       ),
     },
     {
-      id: 'created_at',
+      accessorKey: 'created_at',
       header: 'Created At',
-      cell: (notification) => formatDateTime(notification.created_at),
+      cell: ({ row }) => formatDateTime(row.original.created_at),
     },
   ];
 

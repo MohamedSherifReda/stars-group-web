@@ -51,6 +51,7 @@ const PrivacyPolicy = () => {
     return <Skeleton className="w-full h-full" />;
   }
 
+  console.log(privacyPolicy?.data[0]);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="">

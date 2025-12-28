@@ -377,10 +377,11 @@ export default function Brands() {
 
   const columns: ColumnDef<Brand>[] = [
     {
-      id: 'logo',
+      accessorKey: 'logo',
       header: 'Logo',
-      cell: (brand) =>
-        brand.logo?.url ? (
+      cell: ({ row }) => {
+        const brand = row.original;
+        return brand.logo?.url ? (
           <img
             src={brand.logo.url + brand.logo?.key}
             crossOrigin="anonymous"
@@ -391,12 +392,14 @@ export default function Brands() {
           <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
             <Image className="w-4 h-4 text-gray-400" />
           </div>
-        ),
+        );
+      },
     },
     {
-      id: 'name',
+      accessorKey: 'name',
       header: 'Name (En)',
-      cell: (brand) => {
+      cell: ({ row }) => {
+        const brand = row.original;
         const englishTranslation = brand?.brand_id_brand_translations?.find(
           (translation) => translation?.language === 'en'
         );
@@ -409,16 +412,17 @@ export default function Brands() {
       },
     },
     {
-      id: 'name_ar',
+      accessorKey: 'name_ar',
       header: 'Name (Ar)',
-      cell: (brand) => {
-        return <span>{brand?.name}</span>;
+      cell: ({ row }) => {
+        return <span>{row.original.name}</span>;
       },
     },
     {
-      id: 'description',
+      accessorKey: 'description',
       header: 'Description (En)',
-      cell: (brand) => {
+      cell: ({ row }) => {
+        const brand = row.original;
         const englishTranslation = brand?.brand_id_brand_translations?.find(
           (translation) => translation?.language === 'en'
         );
@@ -432,10 +436,11 @@ export default function Brands() {
       className: 'max-w-xs',
     },
     {
-      id: 'shop_url',
+      accessorKey: 'shop_url',
       header: 'Shop URL',
-      cell: (brand) =>
-        brand.shop_url ? (
+      cell: ({ row }) => {
+        const brand = row.original;
+        return brand.shop_url ? (
           <a
             href={brand.shop_url}
             target="_blank"
@@ -446,73 +451,87 @@ export default function Brands() {
           </a>
         ) : (
           <span className="text-gray-400">No URL</span>
-        ),
+        );
+      },
     },
     {
-      id: 'display_order',
+      accessorKey: 'display_order',
       header: 'Display Order (Double Click to Edit)',
-      cell: (brand) => (
-        <div
-          className="text-gray-400"
-          onDoubleClick={() => startEditingDisplayOrder(brand)}
-        >
-          {editingDisplayOrderId === brand.id ? (
-            <Input
-              type="number"
-              min={0}
-              max={brands?.meta?.total ?? undefined}
-              value={editingDisplayOrderValue}
-              onChange={(e) => setEditingDisplayOrderValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  commitDisplayOrderChange(brand);
-                } else if (e.key === 'Escape') {
-                  setEditingDisplayOrderId(null);
-                }
-              }}
-              autoFocus
-              className="w-20"
-            />
-          ) : (
-            <p className="flex items-center justify-center  w-1/2">
-              {brand.display_order}
-            </p>
-          )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const brand = row.original;
+        return (
+          <div
+            className="text-gray-400"
+            onDoubleClick={() => startEditingDisplayOrder(brand)}
+          >
+            {editingDisplayOrderId === brand.id ? (
+              <Input
+                type="number"
+                min={0}
+                max={brands?.meta?.total ?? undefined}
+                value={editingDisplayOrderValue}
+                onChange={(e) => setEditingDisplayOrderValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    commitDisplayOrderChange(brand);
+                  } else if (e.key === 'Escape') {
+                    setEditingDisplayOrderId(null);
+                  }
+                }}
+                autoFocus
+                className="w-20"
+              />
+            ) : (
+              <p className="flex items-center justify-center  w-1/2">
+                {brand.display_order}
+              </p>
+            )}
+          </div>
+        );
+      },
     },
     {
-      id: 'banner',
+      accessorKey: 'banners',
       header: 'Banner',
-      cell: (brand: Brand) => (
-        <span className="line-clamp-1 w-fit">
-          {brand.banners
-            ?.map(
-              (banner: Banner | number | string) =>
-                (banner as Banner)?.promotion_name
-            )
-            .join(' - ') || 'N/A'}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const brand = row.original;
+        return (
+          <span className="line-clamp-1 w-fit">
+            {brand.banners
+              ?.map(
+                (banner: Banner | number | string) =>
+                  (banner as Banner)?.promotion_name
+              )
+              .join(' - ') || 'N/A'}
+          </span>
+        );
+      },
       className: 'w-fit',
     },
     {
       id: 'actions',
       header: 'Actions',
-      cell: (brand) => (
-        <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleDelete(brand.id)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handleEdit(brand)}>
-            <Edit className="w-4 h-4" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const brand = row.original;
+        return (
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDelete(brand.id)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleEdit(brand)}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 

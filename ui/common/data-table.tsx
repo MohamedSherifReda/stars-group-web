@@ -1,6 +1,15 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  flexRender,
+  type ColumnDef as TanStackColumnDef,
+  type ColumnFiltersState,
+  type OnChangeFn,
+} from '@tanstack/react-table';
+import {
   Table,
   TableBody,
   TableCell,
@@ -9,19 +18,22 @@ import {
   TableRow,
 } from './table';
 import { Button } from './button';
+import { Input } from './input';
+import { Search } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
 
-export interface ColumnDef<TData> {
-  /** Unique identifier for the column */
-  id: string;
-  /** Column header label */
-  header: string;
-  /** Function to access/render the cell value */
-  cell: (row: TData) => React.ReactNode;
-  /** Optional custom className for the column */
+// We'll use TanStack's ColumnDef but keep our name for convenience
+export type ColumnDef<TData> = TanStackColumnDef<TData, any> & {
   className?: string;
-  /** Optional custom className for the header */
   headerClassName?: string;
-}
+  filterOptions?: { label: string; value: string }[];
+};
 
 export interface PaginationState {
   /** Current page number (1-indexed) */
@@ -51,29 +63,15 @@ export interface DataTableProps<TData> {
   showPagination?: boolean;
   /** Page size options for the user to choose from */
   pageSizeOptions?: number[];
+  /** Column filters state */
+  columnFilters?: ColumnFiltersState;
+  /** Callback when column filters change */
+  onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
 }
 
 /**
- * Reusable DataTable component with built-in pagination
- * 
- * @example
- * ```tsx
- * const columns: ColumnDef<User>[] = [
- *   { id: 'name', header: 'Name', cell: (user) => user.name },
- *   { id: 'email', header: 'Email', cell: (user) => user.email },
- * ];
- * 
- * <DataTable
- *   columns={columns}
- *   data={users}
- *   pagination={{
- *     pageIndex: currentPage,
- *     pageSize: 10,
- *     totalItems: totalUsers,
- *   }}
- *   onPaginationChange={(page, size) => setCurrentPage(page)}
- * />
- * ```
+ * Reusable DataTable component powered by TanStack React Table
+ * with built-in pagination
  */
 export function DataTable<TData>({
   columns,
@@ -85,7 +83,25 @@ export function DataTable<TData>({
   className = '',
   showPagination = true,
   pageSizeOptions = [10, 20, 50, 100],
+  columnFilters,
+  onColumnFiltersChange,
 }: DataTableProps<TData>) {
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    ...(onColumnFiltersChange && { onColumnFiltersChange }),
+    manualFiltering: true,
+    manualPagination: true,
+    state: {
+      columnFilters: columnFilters ?? [],
+    },
+    pageCount: pagination
+      ? Math.ceil(pagination.totalItems / pagination.pageSize)
+      : 1,
+  });
+
   const totalPages = pagination
     ? Math.ceil(pagination.totalItems / pagination.pageSize)
     : 1;
@@ -131,7 +147,11 @@ export function DataTable<TData>({
     }
 
     // Show pages around current page
-    for (let i = Math.max(2, pageIndex - 1); i <= Math.min(totalPages - 1, pageIndex + 1); i++) {
+    for (
+      let i = Math.max(2, pageIndex - 1);
+      i <= Math.min(totalPages - 1, pageIndex + 1);
+      i++
+    ) {
       if (!pages.includes(i)) {
         pages.push(i);
       }
@@ -186,30 +206,100 @@ export function DataTable<TData>({
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead
-                  key={column.id}
-                  className={column.headerClassName}
-                >
-                  {column.header}
-                </TableHead>
-              ))}
-            </TableRow>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={(header.column.columnDef as any).headerClassName}
+                  >
+                    <div className="flex flex-col space-y-2 py-2">
+                      <div className="flex items-center">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </div>
+                      {header.column.getCanFilter() && (
+                        <div className="relative">
+                          {(header.column.columnDef as any).filterOptions ? (
+                            <Select
+                              value={
+                                (header.column.getFilterValue() as string) ??
+                                'all'
+                              }
+                              onValueChange={(value) =>
+                                header.column.setFilterValue(
+                                  value === 'all' ? undefined : value
+                                )
+                              }
+                            >
+                              <SelectTrigger className="h-7 w-full text-xs font-normal">
+                                <SelectValue placeholder="All" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                {(
+                                  header.column.columnDef as any
+                                ).filterOptions.map(
+                                  (option: {
+                                    label: string;
+                                    value: string;
+                                  }) => (
+                                    <SelectItem
+                                      key={option.value}
+                                      value={option.value}
+                                    >
+                                      {option.label}
+                                    </SelectItem>
+                                  )
+                                )}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <>
+                              <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                              <Input
+                                placeholder={`Filter...`}
+                                value={
+                                  (header.column.getFilterValue() as string) ??
+                                  ''
+                                }
+                                onChange={(event) =>
+                                  header.column.setFilterValue(
+                                    event.target.value
+                                  )
+                                }
+                                className="h-7 w-full pl-7 text-xs font-normal"
+                              />
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
           </TableHeader>
           <TableBody>
             {isLoading
               ? renderLoadingState()
-              : data.length === 0
+              : table.getRowModel().rows.length === 0
               ? renderEmptyState()
-              : data.map((row, rowIndex) => (
-                  <TableRow key={rowIndex}>
-                    {columns.map((column) => (
+              : table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
                       <TableCell
-                        key={`${rowIndex}-${column.id}`}
-                        className={column.className}
+                        key={cell.id}
+                        className={(cell.column.columnDef as any).className}
                       >
-                        {column.cell(row)}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -235,8 +325,7 @@ export function DataTable<TData>({
                   pagination.totalItems
                 )}
               </span>{' '}
-              of{' '}
-              <span className="font-medium">{pagination.totalItems}</span>{' '}
+              of <span className="font-medium">{pagination.totalItems}</span>{' '}
               results
             </div>
 
@@ -275,7 +364,10 @@ export function DataTable<TData>({
               {getPageNumbers().map((page, index) => {
                 if (page === 'ellipsis') {
                   return (
-                    <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+                    <span
+                      key={`ellipsis-${index}`}
+                      className="px-2 text-gray-500"
+                    >
                       ...
                     </span>
                   );
@@ -284,7 +376,9 @@ export function DataTable<TData>({
                 return (
                   <Button
                     key={page}
-                    variant={pagination.pageIndex === page ? 'default' : 'outline'}
+                    variant={
+                      pagination.pageIndex === page ? 'default' : 'outline'
+                    }
                     size="sm"
                     onClick={() => handlePageClick(page)}
                     disabled={isLoading}
