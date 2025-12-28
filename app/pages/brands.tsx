@@ -25,13 +25,37 @@ import { Label } from '@ui/common/label';
 import { Textarea } from '@ui/common/textarea';
 import { DataTable, type ColumnDef } from '@ui/common/data-table';
 import type { Brand } from 'core/types/brand.types';
-import { Edit, Image, LoaderCircle, Plus, Trash2 } from 'lucide-react';
+import {
+  Edit,
+  Filter,
+  Image,
+  LoaderCircle,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import serveBrandsMeta from '~/meta/serveBrandsMeta';
 import { bannersApi } from '@features/banner/banner.apis';
 import { MultiSelectInput } from '@ui/common/MultiSelectInput';
 import type { Banner } from 'core/types/banner.types';
+import { Badge } from '@ui/common/badge';
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@ui/common/sheet';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@ui/common/select';
+import BrandsFilters from '@features/brand/components/BrandsFilters';
 
 export const meta = serveBrandsMeta;
 
@@ -47,7 +71,6 @@ interface BrandFormData {
   display_order: string | undefined;
   banners?: string[] | number[] | undefined | Banner[];
 }
-
 
 const RECOMMENDED_LOGO_ASPECT_RATIO =
   'It is recommended to use an image with a 1.5:1 (width:height) aspect ratio';
@@ -80,30 +103,57 @@ export default function Brands() {
     null
   );
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
+  const [tempFilters, setTempFilters] = useState<any>({});
   const queryClient = useQueryClient();
 
   const {
     data: brands = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading,
   } = useQuery({
-    queryKey: ['brands', currentPage, pageSize],
-    queryFn: () =>
-      brandsApi
+    queryKey: ['brands', currentPage, pageSize, appliedFilters],
+    queryFn: () => {
+      const filters: any = {};
+      Object.entries(appliedFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') {
+          if (key === 'created_at') {
+            filters[key] = {
+              $val: new Date(value as string).toISOString(),
+              $op: 'Eq',
+            };
+          } else {
+            filters[key] = {
+              $val: value,
+              $op: 'Contains',
+            };
+          }
+        }
+      });
+      return brandsApi
         .getBrands(
           {
-            'relations[logo]': 'true',
-            'relations[product_picture]': 'true',
-            'relations[background_logo]': 'true',
-            'relations[banners]': 'true',
-            'orders[display_order]': 'asc',
-            'pagination[take]': pageSize,
-            'pagination[skip]': (currentPage - 1) * pageSize,
+            relations: {
+              logo: true,
+              product_picture: true,
+              background_logo: true,
+              banners: true,
+            },
+            orders: {
+              display_order: 'asc',
+            },
+            pagination: {
+              take: pageSize,
+              skip: (currentPage - 1) * pageSize,
+            },
+            filters: filters,
           },
           {
             'x-skip-translations': true,
           }
         )
-        .then((res) => res.data),
+        .then((res) => res.data);
+    },
   });
 
   const {
@@ -507,6 +557,7 @@ export default function Brands() {
         );
       },
       className: 'w-fit',
+      enableColumnFilter: false,
     },
     {
       id: 'actions',
@@ -542,6 +593,24 @@ export default function Brands() {
     return [...list].sort((a, b) => a?.display_order - b?.display_order);
   }, [brands?.data]);
 
+  const handleApplyFilters = () => {
+    setAppliedFilters(tempFilters);
+    setCurrentPage(1);
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleClearFilters = () => {
+    setTempFilters({});
+    setAppliedFilters({});
+    setCurrentPage(1);
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleOpenFilters = () => {
+    setTempFilters(appliedFilters);
+    setIsFilterSidebarOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -551,282 +620,342 @@ export default function Brands() {
             Manage brand partners and their information.
           </p>
         </div>
-        <Dialog
-          open={isCreateOpen}
-          onOpenChange={() => {
-            resetForm();
-            setIsCreateOpen((prev) => !prev);
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Brand
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Brand</DialogTitle>
-              <DialogDescription>
-                Add a new brand partner to the system.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center flex-row-reverse gap-4">
+          {/* filters button */}
+          <Button
+            variant="outline"
+            onClick={handleOpenFilters}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {Object.values(appliedFilters).filter(
+              (v) => v !== undefined && v !== '' && v !== 'all'
+            ).length > 0 && (
+              <Badge
+                variant="secondary"
+                className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
+              >
+                {
+                  Object.values(appliedFilters).filter(
+                    (v) => v !== undefined && v !== '' && v !== 'all'
+                  ).length
+                }
+              </Badge>
+            )}
+          </Button>
+          {/* Add a new Brand */}
+          <Dialog
+            open={isCreateOpen}
+            onOpenChange={() => {
+              resetForm();
+              setIsCreateOpen((prev) => !prev);
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Brand
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Brand</DialogTitle>
+                <DialogDescription>
+                  Add a new brand partner to the system.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name_ar">
+                      Brand Name (Ar)
+                      <Asterisk />
+                    </Label>
+                    <Input
+                      id="name_ar"
+                      value={formData.name_ar}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          name_ar: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="heading_title_ar">
+                      Heading Title (Ar)
+                      <Asterisk />
+                    </Label>
+                    <Input
+                      id="heading_title_ar"
+                      value={formData.heading_title_ar}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          heading_title_ar: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="name_ar">
-                    Brand Name (Ar)
-                    <Asterisk />
+                  <Label htmlFor="description_ar">
+                    Description (Ar) <Asterisk />
                   </Label>
-                  <Input
-                    id="name_ar"
-                    value={formData.name_ar}
+                  <Textarea
+                    id="description_ar"
+                    value={formData.description_ar}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        name_ar: e.target.value,
+                        description_ar: e.target.value,
                       }))
                     }
                     required
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name_en">
+                      Brand Name (En) <Asterisk />
+                    </Label>
+                    <Input
+                      id="name_en"
+                      value={formData.name_en}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          name_en: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="heading_title_en">
+                      Heading Title (En) <Asterisk />
+                    </Label>
+                    <Input
+                      id="heading_title_en"
+                      value={formData.heading_title_en}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          heading_title_en: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="heading_title_ar">
-                    Heading Title (Ar)
-                    <Asterisk />
+                  <Label htmlFor="description_en">
+                    Description (En) <Asterisk />
                   </Label>
-                  <Input
-                    id="heading_title_ar"
-                    value={formData.heading_title_ar}
+                  <Textarea
+                    id="description_en"
+                    value={formData.description_en}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        heading_title_ar: e.target.value,
+                        description_en: e.target.value,
                       }))
                     }
                     required
                   />
                 </div>
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="shop_url">
+                      Shop URL <Asterisk />
+                    </Label>
+                    <Input
+                      id="shop_url"
+                      type="url"
+                      value={formData.shop_url}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          shop_url: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gradient_hex">Gradient Color</Label>
+                    <Input
+                      id="gradient_hex"
+                      type="color"
+                      value={formData.gradient_hex}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          gradient_hex: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="logo">
+                      Logo <Asterisk />
+                    </Label>
+                    <FileInput
+                      id="logo"
+                      accept="image/*"
+                      placeholder="Select a logo image"
+                      onChange={(file) => setLogoFile(file)}
+                    />
+                    <span className={imgRecommendationClassName}>
+                      {RECOMMENDED_LOGO_ASPECT_RATIO}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="product_picture">
+                      Product Picture <Asterisk />
+                    </Label>
+                    <FileInput
+                      id="product_picture"
+                      accept="image/*"
+                      placeholder="Select a product picture"
+                      onChange={(file) => setProductFile(file)}
+                    />
+                    <span className={imgRecommendationClassName}>
+                      {RECOMMENDED_LOGO_ASPECT_RATIO}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="logo_background">
+                      Logo Background Image <Asterisk />
+                    </Label>
+                    <FileInput
+                      id="logo_background"
+                      accept="image/*"
+                      placeholder="Select a logo background image"
+                      onChange={(file) => setLogoBackgroundFile(file)}
+                    />
+                    <span className={imgRecommendationClassName}>
+                      {RECOMMENDED_LOGO_ASPECT_RATIO}
+                    </span>
+                  </div>
+                  {/* Display Order */}
+                  <div className="space-y-2">
+                    <Label htmlFor="display_order">Display Order</Label>
+                    <Input
+                      // defaultValue={String(brands?.meta?.total! + 1)}
+                      id="display_order"
+                      type="number"
+                      min={0}
+                      max={
+                        (brands?.meta?.total ?? brands?.data?.length ?? 0) + 1
+                      }
+                      value={formData.display_order}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          display_order: e.target.value,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-gray-500">
+                      Leave empty to let the system assign the next available
+                      order.
+                    </p>
+                  </div>
+                  {/* Banner */}
+                  <div className="space-y-2">
+                    <Label htmlFor="banner_id">Banner (Optional)</Label>
+                    <MultiSelectInput
+                      options={
+                        banners?.data
+                          ?.filter((banner) => {
+                            return !banner.brand_id;
+                          })
+                          ?.map((banner) => ({
+                            label: banner.promotion_name,
+                            value: banner.id.toString(),
+                          })) ?? []
+                      }
+                      value={(formData.banners as string[]) ?? []}
+                      onChange={(value) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          banners: value,
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description_ar">
-                  Description (Ar) <Asterisk />
-                </Label>
-                <Textarea
-                  id="description_ar"
-                  value={formData.description_ar}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description_ar: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name_en">
-                    Brand Name (En) <Asterisk />
-                  </Label>
-                  <Input
-                    id="name_en"
-                    value={formData.name_en}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        name_en: e.target.value,
-                      }))
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="heading_title_en">
-                    Heading Title (En) <Asterisk />
-                  </Label>
-                  <Input
-                    id="heading_title_en"
-                    value={formData.heading_title_en}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        heading_title_en: e.target.value,
-                      }))
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description_en">
-                  Description (En) <Asterisk />
-                </Label>
-                <Textarea
-                  id="description_en"
-                  value={formData.description_en}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description_en: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shop_url">
-                    Shop URL <Asterisk />
-                  </Label>
-                  <Input
-                    id="shop_url"
-                    type="url"
-                    value={formData.shop_url}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        shop_url: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gradient_hex">Gradient Color</Label>
-                  <Input
-                    id="gradient_hex"
-                    type="color"
-                    value={formData.gradient_hex}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        gradient_hex: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="logo">
-                    Logo <Asterisk />
-                  </Label>
-                  <FileInput
-                    id="logo"
-                    accept="image/*"
-                    placeholder="Select a logo image"
-                    onChange={(file) => setLogoFile(file)}
-                  />
-                  <span className={imgRecommendationClassName}>
-                    {RECOMMENDED_LOGO_ASPECT_RATIO}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="product_picture">
-                    Product Picture <Asterisk />
-                  </Label>
-                  <FileInput
-                    id="product_picture"
-                    accept="image/*"
-                    placeholder="Select a product picture"
-                    onChange={(file) => setProductFile(file)}
-                  />
-                  <span className={imgRecommendationClassName}>
-                    {RECOMMENDED_LOGO_ASPECT_RATIO}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="logo_background">
-                    Logo Background Image <Asterisk />
-                  </Label>
-                  <FileInput
-                    id="logo_background"
-                    accept="image/*"
-                    placeholder="Select a logo background image"
-                    onChange={(file) => setLogoBackgroundFile(file)}
-                  />
-                  <span className={imgRecommendationClassName}>
-                    {RECOMMENDED_LOGO_ASPECT_RATIO}
-                  </span>
-                </div>
-                {/* Display Order */}
-                <div className="space-y-2">
-                  <Label htmlFor="display_order">Display Order</Label>
-                  <Input
-                    // defaultValue={String(brands?.meta?.total! + 1)}
-                    id="display_order"
-                    type="number"
-                    min={0}
-                    max={(brands?.meta?.total ?? brands?.data?.length ?? 0) + 1}
-                    value={formData.display_order}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        display_order: e.target.value,
-                      }))
-                    }
-                  />
-                  <p className="text-xs text-gray-500">
-                    Leave empty to let the system assign the next available
-                    order.
-                  </p>
-                </div>
-                {/* Banner */}
-                <div className="space-y-2">
-                  <Label htmlFor="banner_id">Banner (Optional)</Label>
-                  <MultiSelectInput
-                    options={
-                      banners?.data
-                        ?.filter((banner) => {
-                          return !banner.brand_id;
-                        })
-                        ?.map((banner) => ({
-                          label: banner.promotion_name,
-                          value: banner.id.toString(),
-                        })) ?? []
-                    }
-                    value={(formData.banners as string[]) ?? []}
-                    onChange={(value) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        banners: value,
-                      }));
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4"></div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || isSubmittingForm}
-                >
-                  {createMutation.isPending || isSubmittingForm ? (
-                    <>
-                      <LoaderCircle className="animate-spin " />
-                      Creating...
-                    </>
-                  ) : (
-                    'Create Brand'
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div className="grid grid-cols-2 gap-4"></div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createMutation.isPending || isSubmittingForm}
+                  >
+                    {createMutation.isPending || isSubmittingForm ? (
+                      <>
+                        <LoaderCircle className="animate-spin " />
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Brand'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+      <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
+        <SheetContent className="sm:max-w-md flex flex-col h-full">
+          <SheetHeader className="border-b pb-4">
+            <SheetTitle className="text-xl">Filters</SheetTitle>
+          </SheetHeader>
 
+          <BrandsFilters
+            tempFilters={tempFilters}
+            setTempFilters={setTempFilters}
+          />
+
+          <SheetFooter className="border-t pt-4 flex-row gap-2 mt-auto">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsFilterSidebarOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              className="flex-1 gap-2 border"
+              onClick={handleClearFilters}
+            >
+              <RotateCcw className="w-4 h-4" />
+              Clear All
+            </Button>
+            <Button className="flex-1" onClick={handleApplyFilters}>
+              Filter
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
       <Card>
         <CardHeader>
           <CardTitle>All Brands</CardTitle>

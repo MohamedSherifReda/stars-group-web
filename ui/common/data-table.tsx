@@ -100,6 +100,7 @@ export function DataTable<TData>({
     pageCount: pagination
       ? Math.ceil(pagination.totalItems / pagination.pageSize)
       : 1,
+    enableColumnFilters: false,
   });
 
   const totalPages = pagination
