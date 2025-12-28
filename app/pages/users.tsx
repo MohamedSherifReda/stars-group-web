@@ -70,6 +70,11 @@ export default function Users() {
               $val: Number(value),
               $op: 'Eq',
             };
+          } else if (key === 'created_at' || key === 'birthdate') {
+            filters[key] = {
+              $val: new Date(value as string).toISOString(),
+              $op: 'Eq',
+            };
           } else {
             filters[key] = {
               $val: value,
@@ -330,6 +335,58 @@ export default function Users() {
                 value={tempFilters.email || ''}
                 onChange={(e) =>
                   setTempFilters({ ...tempFilters, email: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone_number">Phone Number</Label>
+              <Input
+                id="phone_number"
+                placeholder="Filter by phone number..."
+                value={tempFilters.phone_number || ''}
+                onChange={(e) =>
+                  setTempFilters({
+                    ...tempFilters,
+                    phone_number: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone_number_key">Phone Number Key</Label>
+              <Input
+                id="phone_number_key"
+                placeholder="e.g. +20"
+                value={tempFilters.phone_number_key || ''}
+                onChange={(e) =>
+                  setTempFilters({
+                    ...tempFilters,
+                    phone_number_key: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="created_at">Joining Date</Label>
+              <Input
+                id="created_at"
+                type="date"
+                value={tempFilters.created_at || ''}
+                onChange={(e) =>
+                  setTempFilters({ ...tempFilters, created_at: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="birthdate">Birthdate</Label>
+              <Input
+                id="birthdate"
+                type="date"
+                value={tempFilters.birthdate || ''}
+                onChange={(e) =>
+                  setTempFilters({ ...tempFilters, birthdate: e.target.value })
                 }
               />
             </div>
