@@ -17,7 +17,7 @@ const ExportToExcel = ({
   excludedCols,
 }: ExportToExcelProps) => {
   const [isLoading, setIsLoading] = useState(false);
-
+console.log('received data', data);
   function exportToExcelHandler() {
     setIsLoading(true);
     // Create a new workbook
@@ -95,6 +95,39 @@ const ExportToExcel = ({
             : 'N/A',
         };
       }
+
+       if (fileName?.includes('scheduled_notifications')) {
+         return {
+           id: updatedRow?.id || 'N/A',
+           title: updatedRow?.title || 'N/A',
+           message: updatedRow?.message || 'N/A',
+           type: updatedRow?.type || 'N/A',
+           status: updatedRow?.status || 'N/A',
+           schedule_at: updatedRow?.schedule_at
+             ? formatDate(updatedRow?.schedule_at, 'dd-MMM-yyyy HH:mm')
+             : 'N/A',
+           processed_count: updatedRow?.processed_count || 0,
+           failed_count: updatedRow?.failed_count || 0,
+           created_at: updatedRow?.created_at
+             ? formatDate(updatedRow?.created_at, 'dd-MMM-yyyy HH:mm')
+             : 'N/A',
+         };
+       }
+
+       if (fileName?.includes('notifications')) {
+         return {
+           id: updatedRow?.id || 'N/A',
+           receiver: updatedRow?.user?.name || 'N/A',
+           title: updatedRow?.title || 'N/A',
+           message: updatedRow?.message || 'N/A',
+           created_at: updatedRow?.created_at
+             ? formatDate(updatedRow?.created_at, 'dd-MMM-yyyy HH:mm')
+             : 'N/A',
+           is_read: updatedRow?.is_read ? 'Yes' : 'No',
+         };
+       }
+
+     
 
       return updatedRow;
     });

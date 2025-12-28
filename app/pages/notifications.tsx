@@ -77,6 +77,7 @@ import {
   SheetTitle,
 } from '@ui/common/sheet';
 import NotificationsFilters from '@features/notification/components/NotificationsFilters';
+import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 
 export const meta = serveNotificationsMeta;
 
@@ -744,6 +745,18 @@ export default function Notifications() {
               </Badge>
             )}
           </Button>
+          <ExportToExcel
+            data={
+              activeTab === 'all'
+                ? notifications || []
+                : scheduledNotifications || []
+            }
+            fileName={
+              activeTab === 'all'
+                ? 'notifications.xlsx'
+                : 'scheduled_notifications.xlsx'
+            }
+          />
           <Dialog
             open={isCreateOpen}
             onOpenChange={() => {
