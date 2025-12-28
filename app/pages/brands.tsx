@@ -48,14 +48,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@ui/common/sheet';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@ui/common/select';
 import BrandsFilters from '@features/brand/components/BrandsFilters';
+import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 
 export const meta = serveBrandsMeta;
 
@@ -586,6 +580,18 @@ export default function Brands() {
     },
   ];
 
+  const excludedFromExcelExport = [
+    'actions',
+    'created_at',
+    'deleted_at',
+    'updated_at',
+    'gradient_hex',
+    'created_at',
+    'logo_id',
+    'background_logo_id',
+    'product_picture_id',
+  ];
+
   const totalBrands = brands?.meta?.total ?? brands?.data?.length ?? 0;
 
   const sortedBrands = useMemo(() => {
@@ -921,6 +927,12 @@ export default function Brands() {
               </form>
             </DialogContent>
           </Dialog>
+
+          <ExportToExcel
+            fileName="brands.xlsx"
+            data={brands?.data ?? []}
+            excludedCols={excludedFromExcelExport}
+          />
         </div>
       </div>
       <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
