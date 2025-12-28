@@ -18,6 +18,7 @@ export interface Notification {
   sent_at?: string; // ISO date string - when notification was actually sent
   status?: 'scheduled' | 'sent' | 'failed';
   user?: User;
+  is_read?: boolean;
 }
 
 export interface ScheduledNotification {

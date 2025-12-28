@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, Send, Clock, CalendarIcon } from 'lucide-react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Send,
+  Clock,
+  CalendarIcon,
+  Filter,
+  RotateCcw,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -60,6 +69,14 @@ import {
   SelectValue,
 } from '@ui/common/select';
 import { Field, FieldLabel } from '@ui/common/field';
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@ui/common/sheet';
+import NotificationsFilters from '@features/notification/components/NotificationsFilters';
 
 export const meta = serveNotificationsMeta;
 
@@ -142,6 +159,10 @@ export default function Notifications() {
   const [scheduledPageSize, setScheduledPageSize] = useState(10);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
 
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
+  const [tempFilters, setTempFilters] = useState<any>({});
+
   const queryClient = useQueryClient();
 
   // Pagination state for brands used in the SelectInput
@@ -171,16 +192,40 @@ export default function Notifications() {
 
   // Fetch notifications with pagination
   const { data: notificationsResponse, isLoading } = useQuery({
-    queryKey: ['notifications', currentPage, pageSize],
-    queryFn: () =>
-      notificationsApi
+    queryKey: ['notifications', currentPage, pageSize, appliedFilters],
+    queryFn: () => {
+      const filters: any = {};
+      Object.entries(appliedFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') {
+          if (key === 'created_at') {
+            filters[key] = {
+              $val: new Date(value as string).toISOString(),
+              $op: 'Eq',
+            };
+          } else if (key === 'is_read') {
+            filters[key] = {
+              $val: value === 'true',
+              $op: 'Is',
+            };
+          } else {
+            filters[key] = {
+              $val: value,
+              $op: 'Contains',
+            };
+          }
+        }
+      });
+
+      return notificationsApi
         .getNotifications({
           'pagination[take]': pageSize,
           'pagination[skip]': (currentPage - 1) * pageSize,
           'relations[user]': 'true',
           'orders[created_at]': 'desc',
+          filters,
         })
-        .then((res) => res.data),
+        .then((res) => res.data);
+    },
   });
 
   const notifications = notificationsResponse?.data || [];
@@ -197,15 +242,36 @@ export default function Notifications() {
       'scheduled-notifications',
       scheduledCurrentPage,
       scheduledPageSize,
+      appliedFilters,
     ],
-    queryFn: () =>
-      notificationsApi
+    queryFn: () => {
+      const filters: any = {};
+      Object.entries(appliedFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') {
+          if (key === 'created_at') {
+            filters[key] = {
+              $val: new Date(value as string).toISOString(),
+
+              $op: 'Eq',
+            };
+          } else if (key !== 'is_read') {
+            filters[key] = {
+              $val: value,
+              $op: 'Contains',
+            };
+          }
+        }
+      });
+
+      return notificationsApi
         .getScheduledNotifications({
           'pagination[take]': scheduledPageSize,
           'pagination[skip]': (scheduledCurrentPage - 1) * scheduledPageSize,
           'orders[created_at]': 'desc',
+          filters,
         })
-        .then((res) => res.data),
+        .then((res) => res.data);
+    },
     staleTime: 0,
     refetchInterval: 2 * 60 * 1000, // Refetch every 2 mins
     refetchOnWindowFocus: true, // Refetch when window regains focus
@@ -459,6 +525,24 @@ export default function Notifications() {
     // }
   };
 
+  const handleApplyFilters = () => {
+    setAppliedFilters(tempFilters);
+    setCurrentPage(1);
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleClearFilters = () => {
+    setTempFilters({});
+    setAppliedFilters({});
+    setCurrentPage(1);
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleOpenFilters = () => {
+    setTempFilters(appliedFilters);
+    setIsFilterSidebarOpen(true);
+  };
+
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleString('en-US', {
@@ -503,6 +587,11 @@ export default function Notifications() {
       accessorKey: 'created_at',
       header: 'Created At',
       cell: ({ row }) => formatDateTime(row.original.created_at),
+    },
+    {
+      accessorKey: 'is_read',
+      header: 'Read Status',
+      cell: ({ row }) => (row.original?.is_read ? 'Yes' : 'No'),
     },
 
     {
@@ -632,156 +721,164 @@ export default function Notifications() {
             Send and manage push notifications to your app users.
           </p>
         </div>
-        <Dialog
-          open={isCreateOpen}
-          onOpenChange={() => {
-            reset();
-            setIsCreateOpen((prev) => !prev);
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Notification
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl ">
-            <DialogHeader>
-              <DialogTitle>Create Push Notification</DialogTitle>
-              <DialogDescription>
-                Compose a new push notification to send to all users.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">
-                  Title <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="title"
-                  {...register('title')}
-                  placeholder="Enter notification title"
-                />
-                {errors.title && (
-                  <p className="text-sm text-red-500">{errors.title.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="message">
-                  Message <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="message"
-                  {...register('message')}
-                  placeholder="Enter notification message"
-                  rows={4}
-                />
-                {errors.message && (
-                  <p className="text-sm text-red-500">
-                    {errors.message.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Recipients */}
+        <div className="flex flex-row-reverse gap-4">
+          <Dialog
+            open={isCreateOpen}
+            onOpenChange={() => {
+              reset();
+              setIsCreateOpen((prev) => !prev);
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Notification
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl ">
+              <DialogHeader>
+                <DialogTitle>Create Push Notification</DialogTitle>
+                <DialogDescription>
+                  Compose a new push notification to send to all users.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>
-                    Recipients <span className="text-red-500">*</span>
+                  <Label htmlFor="title">
+                    Title <span className="text-red-500">*</span>
                   </Label>
-                  <UsersDropdown
-                    control={control}
-                    name="users"
-                    placeholder="Select users to notify..."
-                    multiple={true}
-                    showAllUsersOption={true}
-                    renderUser={(user) => `${user.name} (${user.email})`}
-                    {...(errors.users?.message && {
-                      error: errors.users.message,
-                    })}
-                    pageSize={20}
+                  <Input
+                    id="title"
+                    {...register('title')}
+                    placeholder="Enter notification title"
                   />
-                  {watch('users')?.length > 0 && (
-                    <p className="text-sm text-gray-600">
-                      {watch('users').includes(ALL_USERS_VALUE)
-                        ? 'Broadcasting to all users'
-                        : `${watch('users').length} user${
-                            watch('users').length !== 1 ? 's' : ''
-                          } selected`}
+                  {errors.title && (
+                    <p className="text-sm text-red-500">
+                      {errors.title.message}
                     </p>
                   )}
                 </div>
-                {/* Brand (Optional) */}
+
                 <div className="space-y-2">
-                  <Label htmlFor="brand_id">Brand (Optional)</Label>
-                  <SelectInput
-                    options={allBrands.map((brand: Brand) => ({
-                      label: brand.name,
-                      value: brand.id.toString(),
-                    }))}
+                  <Label htmlFor="message">
+                    Message <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    id="message"
+                    {...register('message')}
+                    placeholder="Enter notification message"
+                    rows={4}
+                  />
+                  {errors.message && (
+                    <p className="text-sm text-red-500">
+                      {errors.message.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Recipients */}
+                  <div className="space-y-2">
+                    <Label>
+                      Recipients <span className="text-red-500">*</span>
+                    </Label>
+                    <UsersDropdown
+                      control={control}
+                      name="users"
+                      placeholder="Select users to notify..."
+                      multiple={true}
+                      showAllUsersOption={true}
+                      renderUser={(user) => `${user.name} (${user.email})`}
+                      {...(errors.users?.message && {
+                        error: errors.users.message,
+                      })}
+                      pageSize={20}
+                    />
+                    {watch('users')?.length > 0 && (
+                      <p className="text-sm text-gray-600">
+                        {watch('users').includes(ALL_USERS_VALUE)
+                          ? 'Broadcasting to all users'
+                          : `${watch('users').length} user${
+                              watch('users').length !== 1 ? 's' : ''
+                            } selected`}
+                      </p>
+                    )}
+                  </div>
+                  {/* Brand (Optional) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="brand_id">Brand (Optional)</Label>
+                    <SelectInput
+                      options={allBrands.map((brand: Brand) => ({
+                        label: brand.name,
+                        value: brand.id.toString(),
+                      }))}
+                      control={control}
+                      name="brand_id"
+                      placeholder="Select a brand"
+                      id="brand_id"
+                      loadedCount={loadedBrandsCount}
+                      totalCount={totalBrands}
+                      hasMore={hasMoreBrands}
+                      isLoadingMore={isFetchingBrands}
+                      onLoadMore={() => {
+                        if (hasMoreBrands && !isFetchingBrands) {
+                          setBrandPage((prev) => prev + 1);
+                        }
+                      }}
+                    />
+                    {errors?.brand_id && (
+                      <p className="text-sm text-red-500">
+                        {errors?.brand_id?.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {/* Redirect URL */}
+                <div className="space-y-2">
+                  <Controller
+                    name="link"
                     control={control}
-                    name="brand_id"
-                    placeholder="Select a brand"
-                    id="brand_id"
-                    loadedCount={loadedBrandsCount}
-                    totalCount={totalBrands}
-                    hasMore={hasMoreBrands}
-                    isLoadingMore={isFetchingBrands}
-                    onLoadMore={() => {
-                      if (hasMoreBrands && !isFetchingBrands) {
-                        setBrandPage((prev) => prev + 1);
-                      }
+                    render={({ field }) => {
+                      return (
+                        <Field>
+                          <FieldLabel htmlFor="link">
+                            Redirect URL (Optional)
+                          </FieldLabel>
+                          <Select
+                            value={field?.value || ''}
+                            onValueChange={(value) => {
+                              setValue('link', value);
+                              if (value === '/brand-id/x') {
+                                setSelectedBrandId(null);
+                              }
+                            }}
+                          >
+                            <SelectTrigger id="link">
+                              <SelectValue placeholder="Select a redirection url" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {redirectionUrls.map((item) => {
+                                return (
+                                  <SelectItem
+                                    key={item.value}
+                                    value={item.value}
+                                  >
+                                    {item.label}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      );
                     }}
                   />
-                  {errors?.brand_id && (
+                  {errors.link && (
                     <p className="text-sm text-red-500">
-                      {errors?.brand_id?.message}
+                      {errors.link.message}
                     </p>
                   )}
-                </div>
-              </div>
-              {/* Redirect URL */}
-              <div className="space-y-2">
-                <Controller
-                  name="link"
-                  control={control}
-                  render={({ field }) => {
-                    return (
-                      <Field>
-                        <FieldLabel htmlFor="link">
-                          Redirect URL (Optional)
-                        </FieldLabel>
-                        <Select
-                          value={field?.value || ''}
-                          onValueChange={(value) => {
-                            setValue('link', value);
-                            if (value === '/brand-id/x') {
-                              setSelectedBrandId(null);
-                            }
-                          }}
-                        >
-                          <SelectTrigger id="link">
-                            <SelectValue placeholder="Select a redirection url" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {redirectionUrls.map((item) => {
-                              return (
-                                <SelectItem key={item.value} value={item.value}>
-                                  {item.label}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                    );
-                  }}
-                />
-                {errors.link && (
-                  <p className="text-sm text-red-500">{errors.link.message}</p>
-                )}
-                {/* {notificationLinkValue === '/brand-id/x' && (
+                  {/* {notificationLinkValue === '/brand-id/x' && (
                   <Controller
                     name="brand_url_id"
                     control={control}
@@ -817,158 +914,217 @@ export default function Notifications() {
                     {errors?.brand_url_id.message}
                   </p>
                 )} */}
-                <p className="text-sm text-gray-500">
-                  Optional: Add a link to direct users to a specific page
-                </p>
-              </div>
-
-              {/* Schedule date and time for the notification */}
-              <div className="space-y-2">
-                <Label htmlFor="scheduled_at">
-                  Schedule Date and Time (Optional)
-                </Label>
-                <Controller
-                  name="scheduled_at"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="flex gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'flex-1 justify-start text-left font-normal',
-                              !field.value && 'text-muted-foreground'
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                              ? format(new Date(field.value), 'PPP p')
-                              : 'Pick a date and time'}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={
-                              field.value ? new Date(field.value) : undefined
-                            }
-                            onSelect={(date) => {
-                              if (date) {
-                                // Preserve time if already set, otherwise set to current time
-                                const currentDate = field.value
-                                  ? new Date(field.value)
-                                  : new Date();
-                                date.setHours(currentDate.getHours());
-                                date.setMinutes(currentDate.getMinutes());
-                                field.onChange(date.toISOString());
-                              }
-                            }}
-                            disabled={(date) =>
-                              date < new Date(new Date().setHours(0, 0, 0, 0))
-                            }
-                            initialFocus
-                          />
-                          <div className="border-t p-3">
-                            <Label className="text-sm">Time</Label>
-                            <div className="flex gap-2 mt-2">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="23"
-                                placeholder="HH"
-                                value={
-                                  field.value
-                                    ? new Date(field.value)
-                                        .getHours()
-                                        .toString()
-                                        .padStart(2, '0')
-                                    : ''
-                                }
-                                onChange={(e) => {
-                                  const hours = parseInt(e.target.value) || 0;
-                                  const date = field.value
-                                    ? new Date(field.value)
-                                    : new Date();
-                                  date.setHours(hours);
-                                  field.onChange(date.toISOString());
-                                }}
-                                className="w-16"
-                              />
-                              <span className="self-center">:</span>
-                              <Input
-                                type="number"
-                                min="0"
-                                max="59"
-                                placeholder="MM"
-                                value={
-                                  field.value
-                                    ? new Date(field.value)
-                                        .getMinutes()
-                                        .toString()
-                                        .padStart(2, '0')
-                                    : ''
-                                }
-                                onChange={(e) => {
-                                  const minutes = parseInt(e.target.value) || 0;
-                                  const date = field.value
-                                    ? new Date(field.value)
-                                    : new Date();
-                                  date.setMinutes(minutes);
-                                  field.onChange(date.toISOString());
-                                }}
-                                className="w-16"
-                              />
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      {field.value && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => field.onChange(undefined)}
-                        >
-                          Clear
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                />
-                <p className="text-sm text-gray-500">
-                  Leave empty to send immediately, or select a date and time to
-                  schedule
-                </p>
-                {errors?.scheduled_at?.message && (
-                  <p className="text-sm text-red-500">
-                    {errors.scheduled_at.message}
+                  <p className="text-sm text-gray-500">
+                    Optional: Add a link to direct users to a specific page
                   </p>
-                )}
-              </div>
+                </div>
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    createMutation.isPending || broadcastMutation.isPending
-                  }
-                >
-                  {createMutation.isPending || broadcastMutation.isPending
-                    ? 'Sending...'
-                    : 'Send Notification'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                {/* Schedule date and time for the notification */}
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled_at">
+                    Schedule Date and Time (Optional)
+                  </Label>
+                  <Controller
+                    name="scheduled_at"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'flex-1 justify-start text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value
+                                ? format(new Date(field.value), 'PPP p')
+                                : 'Pick a date and time'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                field.value ? new Date(field.value) : undefined
+                              }
+                              onSelect={(date) => {
+                                if (date) {
+                                  // Preserve time if already set, otherwise set to current time
+                                  const currentDate = field.value
+                                    ? new Date(field.value)
+                                    : new Date();
+                                  date.setHours(currentDate.getHours());
+                                  date.setMinutes(currentDate.getMinutes());
+                                  field.onChange(date.toISOString());
+                                }
+                              }}
+                              disabled={(date) =>
+                                date < new Date(new Date().setHours(0, 0, 0, 0))
+                              }
+                              initialFocus
+                            />
+                            <div className="border-t p-3">
+                              <Label className="text-sm">Time</Label>
+                              <div className="flex gap-2 mt-2">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="23"
+                                  placeholder="HH"
+                                  value={
+                                    field.value
+                                      ? new Date(field.value)
+                                          .getHours()
+                                          .toString()
+                                          .padStart(2, '0')
+                                      : ''
+                                  }
+                                  onChange={(e) => {
+                                    const hours = parseInt(e.target.value) || 0;
+                                    const date = field.value
+                                      ? new Date(field.value)
+                                      : new Date();
+                                    date.setHours(hours);
+                                    field.onChange(date.toISOString());
+                                  }}
+                                  className="w-16"
+                                />
+                                <span className="self-center">:</span>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="59"
+                                  placeholder="MM"
+                                  value={
+                                    field.value
+                                      ? new Date(field.value)
+                                          .getMinutes()
+                                          .toString()
+                                          .padStart(2, '0')
+                                      : ''
+                                  }
+                                  onChange={(e) => {
+                                    const minutes =
+                                      parseInt(e.target.value) || 0;
+                                    const date = field.value
+                                      ? new Date(field.value)
+                                      : new Date();
+                                    date.setMinutes(minutes);
+                                    field.onChange(date.toISOString());
+                                  }}
+                                  className="w-16"
+                                />
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        {field.value && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => field.onChange(undefined)}
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  />
+                  <p className="text-sm text-gray-500">
+                    Leave empty to send immediately, or select a date and time
+                    to schedule
+                  </p>
+                  {errors?.scheduled_at?.message && (
+                    <p className="text-sm text-red-500">
+                      {errors.scheduled_at.message}
+                    </p>
+                  )}
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      createMutation.isPending || broadcastMutation.isPending
+                    }
+                  >
+                    {createMutation.isPending || broadcastMutation.isPending
+                      ? 'Sending...'
+                      : 'Send Notification'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="outline"
+            onClick={handleOpenFilters}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {Object.values(appliedFilters).filter(
+              (v) => v !== undefined && v !== '' && v !== 'all'
+            ).length > 0 && (
+              <Badge
+                variant="secondary"
+                className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
+              >
+                {
+                  Object.values(appliedFilters).filter(
+                    (v) => v !== undefined && v !== '' && v !== 'all'
+                  ).length
+                }
+              </Badge>
+            )}
+          </Button>
+        </div>
       </div>
+
+      <Sheet open={isFilterSidebarOpen} onOpenChange={setIsFilterSidebarOpen}>
+        <SheetContent className="sm:max-w-md flex flex-col h-full">
+          <SheetHeader className="border-b pb-4">
+            <SheetTitle className="text-xl">Filters</SheetTitle>
+          </SheetHeader>
+
+          <NotificationsFilters
+            tempFilters={tempFilters}
+            setTempFilters={setTempFilters}
+            redirectionUrls={redirectionUrls?.slice(0, 2)}
+          />
+
+          <SheetFooter className="border-t pt-4 flex-row gap-2 mt-auto">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsFilterSidebarOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              className="flex-1 gap-2 border"
+              onClick={handleClearFilters}
+            >
+              <RotateCcw className="w-4 h-4" />
+              Clear All
+            </Button>
+            <Button className="flex-1" onClick={handleApplyFilters}>
+              Filter
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <Card>
         <CardHeader>
