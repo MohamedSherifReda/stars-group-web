@@ -80,6 +80,22 @@ const ExportToExcel = ({
         };
       }
 
+      if (fileName?.includes('banners')) {
+        return {
+          id: updatedRow?.id || 'N/A',
+          promotion_name: updatedRow?.promotion_name || 'N/A',
+          redirect_url: updatedRow?.redirect_url || 'N/A',
+          brand: updatedRow?.brand?.name || 'Home Page',
+          visibility: updatedRow?.disabled ? 'Disabled' : 'Active',
+          image_en: updatedRow?.image_en
+            ? updatedRow.image_en?.url + updatedRow.image_en?.key
+            : 'N/A',
+          image_ar: updatedRow?.image_ar
+            ? updatedRow.image_ar?.url + updatedRow.image_ar?.key
+            : 'N/A',
+        };
+      }
+
       return updatedRow;
     });
 

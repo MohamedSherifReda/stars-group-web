@@ -62,6 +62,7 @@ import {
 } from '@ui/common/sheet';
 import BannersFilters from '@features/banner/components/BannersFilters';
 import { Badge } from '@ui/common/badge';
+import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 
 export const meta = serveBannersMeta;
 
@@ -92,6 +93,15 @@ export default function Banners() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const queryClient = useQueryClient();
+
+  const excludedBannersColsFromExport = [
+    'image_en_id',
+    'image_ar_id',
+    'brand_id',
+    'created_at',
+    'updated_at',
+    'deleted_at',
+  ];
 
   const {
     data: banners = { data: [], meta: { total: 0, skip: 0, take: 0 } },
@@ -284,7 +294,7 @@ export default function Banners() {
             Manage promotional banners and advertisements.
           </p>
         </div>
-        <div className="flex flex-row-reverse gap-4">
+        <div className="flex flex-row-reverse items-center gap-4">
           {/* filters button */}
           <Button
             variant="outline"
@@ -308,6 +318,13 @@ export default function Banners() {
               </Badge>
             )}
           </Button>
+
+          <ExportToExcel
+            data={banners?.data || []}
+            excludedCols={excludedBannersColsFromExport}
+            fileName="banners.xlsx"
+          />
+
           <Dialog
             open={isCreateOpen}
             onOpenChange={() => {
