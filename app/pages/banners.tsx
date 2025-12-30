@@ -32,14 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@ui/common/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@ui/common/table';
+import { DataTable, type ColumnDef } from '@ui/common/data-table';
 import serveBannersMeta from '~/meta/serveBannersMeta';
 import Asterisk from '@ui/common/Asterisk';
 import { brandsApi } from '@features/brand/brand.apis';
@@ -122,10 +115,10 @@ export default function Banners() {
               $val: value,
               $op: 'Eq',
             };
-          } else if (key === "redirect_url") {
+          } else if (key === 'redirect_url') {
             const urlValue = value as string;
             filters[key] = {
-              $val: urlValue?.endsWith("/") ? urlValue?.slice(0, -1) : urlValue,
+              $val: urlValue?.endsWith('/') ? urlValue?.slice(0, -1) : urlValue,
               $op: 'Contains',
             };
           } else {
@@ -290,6 +283,132 @@ export default function Banners() {
     setTempFilters(appliedFilters);
     setIsFilterSidebarOpen(true);
   };
+
+  const columns: ColumnDef<Banner>[] = [
+    {
+      accessorKey: 'images',
+      header: 'Images',
+      cell: ({ row }) => {
+        const banner = row.original;
+        return (
+          <div className="flex space-x-2">
+            {banner.image_en?.url ? (
+              <img
+                crossOrigin="anonymous"
+                src={banner.image_en.url + banner.image_en.key}
+                alt={`${banner.promotion_name} (EN)`}
+                className="w-16 h-10 object-cover rounded border"
+                title="English"
+              />
+            ) : (
+              <div className="w-16 h-10 bg-gray-200 rounded border flex items-center justify-center">
+                <Image className="w-4 h-4 text-gray-400" />
+              </div>
+            )}
+            {banner.image_ar?.url ? (
+              <img
+                crossOrigin="anonymous"
+                src={banner.image_ar.url + banner.image_ar.key}
+                alt={`${banner.promotion_name} (AR)`}
+                className="w-16 h-10 object-cover rounded border"
+                title="Arabic"
+              />
+            ) : (
+              <div className="w-16 h-10 bg-gray-200 rounded border flex items-center justify-center">
+                <Image className="w-4 h-4 text-gray-400" />
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'promotion_name',
+      header: 'Promotion Name',
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.promotion_name}</span>
+      ),
+    },
+    {
+      accessorKey: 'redirect_url',
+      header: 'Redirect URL',
+      cell: ({ row }) => {
+        const url = row.original.redirect_url;
+        return url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center text-blue-600 hover:underline"
+          >
+            <ExternalLink className="w-4 h-4 mr-1" />
+            Visit URL
+          </a>
+        ) : (
+          <span className="text-gray-400">No redirect</span>
+        );
+      },
+    },
+    {
+      accessorKey: 'brand',
+      header: 'Brand',
+      cell: ({ row }) => {
+        const brand = row.original.brand;
+        return <span>{brand ? brand.name : 'Home Page'}</span>;
+      },
+    },
+    {
+      accessorKey: 'disabled',
+      header: 'Visibility',
+      cell: ({ row }) => {
+        const banner = row.original;
+        return (
+          <Toggle
+            pressed={!banner.disabled}
+            onPressedChange={() =>
+              updateMutation.mutate({
+                id: banner.id,
+                banner: { disabled: !banner.disabled },
+              })
+            }
+            aria-label={
+              banner.disabled
+                ? 'Enable banner visibility'
+                : 'Disable banner visibility'
+            }
+            disabled={updateMutation.isPending}
+          >
+            {banner.disabled ? 'Disabled' : 'Active'}
+          </Toggle>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => {
+        const banner = row.original;
+        return (
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleEdit(banner)}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDelete(banner.id)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -515,122 +634,20 @@ export default function Banners() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isBannersLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500">Loading banners...</div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Images</TableHead>
-                  <TableHead>Promotion Name</TableHead>
-                  <TableHead>Redirect URL</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Visibility</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {banners?.data?.map((banner) => (
-                  <TableRow key={banner.id}>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        {banner.image_en?.url ? (
-                          <img
-                            crossOrigin="anonymous"
-                            src={banner.image_en.url + banner.image_en.key}
-                            alt={`${banner.promotion_name} (EN)`}
-                            className="w-16 h-10 object-cover rounded border"
-                            title="English"
-                          />
-                        ) : (
-                          <div className="w-16 h-10 bg-gray-200 rounded border flex items-center justify-center">
-                            <Image className="w-4 h-4 text-gray-400" />
-                          </div>
-                        )}
-                        {banner.image_ar?.url ? (
-                          <img
-                            crossOrigin="anonymous"
-                            src={banner.image_ar.url + banner.image_ar.key}
-                            alt={`${banner.promotion_name} (AR)`}
-                            className="w-16 h-10 object-cover rounded border"
-                            title="Arabic"
-                          />
-                        ) : (
-                          <div className="w-16 h-10 bg-gray-200 rounded border flex items-center justify-center">
-                            <Image className="w-4 h-4 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {banner.promotion_name}
-                    </TableCell>
-                    <TableCell>
-                      {banner.redirect_url ? (
-                        <a
-                          href={banner.redirect_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-blue-600 hover:underline"
-                        >
-                          <ExternalLink className="w-4 h-4 mr-1" />
-                          Visit URL
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">No redirect</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {banner?.brand ? (
-                        <span className="">{banner?.brand?.name}</span>
-                      ) : (
-                        <span className="">Home Page</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Toggle
-                        pressed={!banner.disabled}
-                        onPressedChange={() =>
-                          updateMutation.mutate({
-                            id: banner.id,
-                            banner: { disabled: !banner.disabled },
-                          })
-                        }
-                        aria-label={
-                          banner.disabled
-                            ? 'Enable banner visibility'
-                            : 'Disable banner visibility'
-                        }
-                        disabled={updateMutation.isPending}
-                      >
-                        {banner.disabled ? 'Disabled' : 'Active'}
-                      </Toggle>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(banner)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(banner.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable
+            columns={columns}
+            data={banners?.data || []}
+            isLoading={isBannersLoading}
+            pagination={{
+              pageIndex: currentPage,
+              pageSize: pageSize,
+              totalItems: banners?.meta?.total || 0,
+            }}
+            onPaginationChange={(pageIndex, pageSize) => {
+              setCurrentPage(pageIndex);
+              setPageSize(pageSize);
+            }}
+          />
         </CardContent>
       </Card>
 
