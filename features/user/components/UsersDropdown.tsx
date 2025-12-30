@@ -13,8 +13,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@ui/common/popover';
 import { usersApi } from '../user.apis';
 import type { User } from 'core/types/user.types';
 import { Button } from '@ui/common/button';
-import { Loader2, Check, X, ChevronDown } from 'lucide-react';
+import { Loader2, Check, X, ChevronDown, Search } from 'lucide-react';
 import { cn } from '@utils/cn';
+import { Input } from '@ui/common/input';
 
 interface UsersDropdownProps<T extends FieldValues> {
   control: Control<T>;
@@ -83,13 +84,39 @@ export const UsersDropdown = <T extends FieldValues>({
   const [page, setPage] = useState(1);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [open, setOpen] = useState(false);
+  const [inputTerm, setInputTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(inputTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [inputTerm]);
+
+  // Reset users when search term changes
+  useEffect(() => {
+    setPage(1);
+    setAllUsers([]);
+  }, [searchTerm]);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['users', page, pageSize],
+    queryKey: ['users', page, pageSize, searchTerm],
     queryFn: async () => {
       const response = await usersApi.getUsers({
-        'pagination[take]': pageSize,
-        'pagination[skip]': (page - 1) * pageSize,
+        pagination: {
+          take: pageSize,
+          skip: (page - 1) * pageSize,
+        },
+        ...(searchTerm && {
+          filters: {
+            name: {
+              $op: 'Contains',
+              $val: searchTerm,
+            },
+          },
+        }),
       });
       return response.data;
     },
@@ -158,7 +185,22 @@ export const UsersDropdown = <T extends FieldValues>({
               <SelectTrigger className={className}>
                 <SelectValue placeholder={placeholder} />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
+              <SelectContent className="max-h-[350px]">
+                <div className="p-2 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-950 z-10">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input
+                      placeholder="Search users..."
+                      className="pl-8 h-9"
+                      value={inputTerm}
+                      onChange={(e) => setInputTerm(e.target.value)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                    />
+                  </div>
+                </div>
                 {isLoading && page === 1 ? (
                   <div className="flex items-center justify-center py-6">
                     <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
@@ -357,6 +399,21 @@ export const UsersDropdown = <T extends FieldValues>({
                 align="start"
                 onWheel={(e) => e.stopPropagation()}
               >
+                <div className="p-2 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-950 z-20">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input
+                      placeholder="Search users..."
+                      className="pl-8 h-9"
+                      value={inputTerm}
+                      onChange={(e) => setInputTerm(e.target.value)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                    />
+                  </div>
+                </div>
                 <div className="max-h-[300px] overflow-y-auto overscroll-contain">
                   {isLoading && page === 1 ? (
                     <div className="flex items-center justify-center py-6">
