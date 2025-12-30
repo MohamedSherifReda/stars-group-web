@@ -122,6 +122,12 @@ export default function Banners() {
               $val: value,
               $op: 'Eq',
             };
+          } else if (key === "redirect_url") {
+            const urlValue = value as string;
+            filters[key] = {
+              $val: urlValue?.endsWith("/") ? urlValue?.slice(0, -1) : urlValue,
+              $op: 'Contains',
+            };
           } else {
             filters[key] = {
               $val: value,
