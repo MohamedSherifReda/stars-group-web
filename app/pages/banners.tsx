@@ -8,6 +8,7 @@ import {
   Image,
   RotateCcw,
   Filter,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bannersApi } from '@features/banner/banner.apis';
@@ -503,7 +504,7 @@ export default function Banners() {
                       placeholder="https://example.com"
                     />
                   </div>
-                  <div>
+                  <div className="relative">
                     <Label htmlFor="brand_id">Brand</Label>
                     <Select
                       value={formData.brand_id?.toString() ?? ''}
@@ -514,7 +515,7 @@ export default function Banners() {
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger hideChevron={!!formData.brand_id}>
                         <SelectValue placeholder="Attach it to a brand" />
                       </SelectTrigger>
                       <SelectContent>
@@ -532,6 +533,22 @@ export default function Banners() {
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    {formData.brand_id && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-[70%] -translate-y-1/2 h-4 w-4 p-0 hover:bg-transparent bg-gray-300 rounded-full hover:bg-gray-400"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            brand_id: undefined,
+                          }))
+                        }
+                      >
+                        <X className="h-3 w-3 text-black" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -694,37 +711,55 @@ export default function Banners() {
                   placeholder="https://example.com"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="brand_id">Brand (Optional)</Label>
-                <Select
-                  value={formData.brand_id?.toString() ?? ''}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      brand_id: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Attach it to a brand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup
-                      defaultValue={formData.brand_id?.toString() ?? ''}
+                <div className="relative">
+                  <Select
+                    value={formData.brand_id?.toString() ?? ''}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        brand_id: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger hideChevron={!!formData.brand_id}>
+                      <SelectValue placeholder="Attach it to a brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup
+                        defaultValue={formData.brand_id?.toString() ?? ''}
+                      >
+                        {brands?.data?.map((brand) => {
+                          return (
+                            <SelectItem
+                              key={brand?.id}
+                              value={brand?.id?.toString()}
+                            >
+                              {brand?.name}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {formData.brand_id && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-[50%] -translate-y-1/2 h-4 w-4 p-0 hover:bg-transparent bg-gray-300 rounded-full hover:bg-gray-400"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          brand_id: undefined,
+                        }))
+                      }
                     >
-                      {brands?.data?.map((brand) => {
-                        return (
-                          <SelectItem
-                            key={brand?.id}
-                            value={brand?.id?.toString()}
-                          >
-                            {brand?.name}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                      <X className="h-3 w-3 text-black" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
