@@ -56,6 +56,11 @@ const sidebarItems = [
     icon: CircleUserRound,
   },
   {
+    title: 'Onboarding Images',
+    href: '/onboarding-images',
+    icon: Image,
+  },
+  {
     title: 'Settings',
     href: '/settings',
     icon: Settings,

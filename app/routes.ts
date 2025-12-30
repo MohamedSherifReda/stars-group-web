@@ -14,4 +14,5 @@ export default [
   route('/contact-us', 'pages/contact-us.tsx'),
   route('/settings', 'pages/settings.tsx'),
   route('/user-feedback', 'pages/user-feedback.tsx'),
+  route('/onboarding-images', 'pages/onboarding-images.tsx'),
 ] satisfies RouteConfig;

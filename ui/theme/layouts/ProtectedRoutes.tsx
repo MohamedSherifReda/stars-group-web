@@ -14,6 +14,7 @@ const protectedRoutes = [
   '/notifications',
   '/contact-us',
   '/settings',
+  '/onboarding-images',
 ];
 
 export const isProtectedRoute = (path: string) => {
