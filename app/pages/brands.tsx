@@ -116,6 +116,14 @@ export default function Brands() {
               $val: new Date(value as string).toISOString(),
               $op: 'Eq',
             };
+          } else if (key === 'shop_url') {
+            const urlValue: string = value as string;
+            filters[key] = {
+              $val: urlValue?.endsWith('/')
+                ? (urlValue?.slice(0, -1) as string) // remove the / from the end
+                : urlValue,
+              $op: 'Contains',
+            };
           } else {
             filters[key] = {
               $val: value,
@@ -475,6 +483,17 @@ export default function Brands() {
             {' '}
             {englishTranslation?.description || 'N/A'}
           </span>
+        );
+      },
+      className: 'max-w-xs',
+    },
+    {
+      accessorKey: 'description_ar',
+      header: 'Description (Ar)',
+      cell: ({ row }) => {
+        const brand = row.original;
+        return (
+          <span className="line-clamp-1"> {brand?.description || 'N/A'}</span>
         );
       },
       className: 'max-w-xs',

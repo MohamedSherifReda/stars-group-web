@@ -22,10 +22,8 @@ const BrandsFilters = ({ tempFilters, setTempFilters }: BrandsFiltersProps) => {
         />
       </div>
 
-
-
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">Description (Ar)</Label>
         <Input
           id="description"
           placeholder="Filter by description..."
@@ -47,8 +45,6 @@ const BrandsFilters = ({ tempFilters, setTempFilters }: BrandsFiltersProps) => {
           }
         />
       </div>
-
-
 
       <div className="space-y-2">
         <Label htmlFor="created_at">Creation Date</Label>
