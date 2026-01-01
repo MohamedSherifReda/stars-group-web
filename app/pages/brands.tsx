@@ -698,6 +698,7 @@ export default function Brands({ meta }: { meta: any }) {
     setIsFilterSidebarOpen(true);
   };
 
+  // loading all of the brands that match the applied filters to prepare them for export to excel...
   useEffect(() => {
     getAllExportedToExcelBrands(appliedFilters);
   }, [appliedFilters]);
