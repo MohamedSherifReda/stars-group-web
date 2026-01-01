@@ -11,7 +11,7 @@ export interface Banner {
   updated_at: string;
   image_en?: Media;
   image_ar?: Media;
-  brand_id?: number | string | undefined;
+  brand_id?: number | string | null;
   /**
    * When true, the banner is disabled and should NOT appear to end users.
    * When false or undefined, the banner is considered enabled/active.

@@ -63,7 +63,7 @@ export const meta = serveBannersMeta;
 interface BannerFormData {
   promotion_name: string;
   redirect_url?: string;
-  brand_id?: string | number | undefined;
+  brand_id?: string | number | null;
 }
 
 const recommendedAspectRatio =
@@ -77,7 +77,6 @@ export default function Banners() {
   const [formData, setFormData] = useState<BannerFormData>({
     promotion_name: '',
     redirect_url: '',
-    brand_id: undefined,
   });
   const [imageEnFile, setImageEnFile] = useState<File | null>(null);
   const [imageArFile, setImageArFile] = useState<File | null>(null);
@@ -202,7 +201,7 @@ export default function Banners() {
     setFormData({
       promotion_name: '',
       redirect_url: '',
-      brand_id: undefined,
+      brand_id: null,
     });
     setImageEnFile(null);
     setImageArFile(null);
@@ -230,18 +229,31 @@ export default function Banners() {
         delete formData.redirect_url;
       }
 
-      const bannerData = {
-        ...formData,
-        ...(imageEnId && { image_en_id: imageEnId }),
-        ...(imageArId && { image_ar_id: imageArId }),
-        ...(formData.brand_id && {
-          brand_id: parseInt(formData.brand_id as string),
-        }),
-      };
-
       if (editingBanner) {
+        const bannerData = {
+          ...formData,
+          ...(imageEnId && { image_en_id: imageEnId }),
+          ...(imageArId && { image_ar_id: imageArId }),
+
+          brand_id: formData?.brand_id
+            ? parseInt(formData.brand_id as string)
+            : null,
+        };
         updateMutation.mutate({ id: editingBanner.id, banner: bannerData });
       } else {
+        // if the brand id is null, then remove it from the payload. (in create mode only).
+        if (formData?.brand_id === null) {
+          delete formData.brand_id;
+        }
+        const bannerData = {
+          ...formData,
+          ...(imageEnId && { image_en_id: imageEnId }),
+          ...(imageArId && { image_ar_id: imageArId }),
+
+          ...(formData?.brand_id && {
+            brand_id: parseInt(formData.brand_id as string),
+          }),
+        };
         createMutation.mutate(bannerData);
       }
     } catch (error) {
@@ -257,7 +269,7 @@ export default function Banners() {
     setFormData({
       promotion_name: banner.promotion_name,
       redirect_url: banner.redirect_url || '',
-      brand_id: banner?.brand?.id?.toString() ?? undefined,
+      brand_id: banner?.brand?.id?.toString() ?? null,
     });
   };
 
@@ -542,7 +554,7 @@ export default function Banners() {
                         onClick={() =>
                           setFormData((prev) => ({
                             ...prev,
-                            brand_id: undefined,
+                            brand_id: null,
                           }))
                         }
                       >
@@ -752,7 +764,7 @@ export default function Banners() {
                       onClick={() =>
                         setFormData((prev) => ({
                           ...prev,
-                          brand_id: undefined,
+                          brand_id: null,
                         }))
                       }
                     >
