@@ -10,16 +10,18 @@ interface ExportToExcelProps {
   data: any[];
   fileName?: string;
   excludedCols?: string[];
+  isFetchingData?: boolean;
 }
 const ExportToExcel = ({
   data,
   fileName,
   excludedCols,
+  isFetchingData,
 }: ExportToExcelProps) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExportingData] = useState(false);
 
   function exportToExcelHandler() {
-    setIsLoading(true);
+    setIsExportingData(true);
     // Create a new workbook
     const workbook = XLSX.utils.book_new();
 
@@ -96,38 +98,36 @@ const ExportToExcel = ({
         };
       }
 
-       if (fileName?.includes('scheduled_notifications')) {
-         return {
-           id: updatedRow?.id || 'N/A',
-           title: updatedRow?.title || 'N/A',
-           message: updatedRow?.message || 'N/A',
-           type: updatedRow?.type || 'N/A',
-           status: updatedRow?.status || 'N/A',
-           schedule_at: updatedRow?.schedule_at
-             ? formatDate(updatedRow?.schedule_at, 'dd-MMM-yyyy HH:mm')
-             : 'N/A',
-           processed_count: updatedRow?.processed_count || 0,
-           failed_count: updatedRow?.failed_count || 0,
-           created_at: updatedRow?.created_at
-             ? formatDate(updatedRow?.created_at, 'dd-MMM-yyyy HH:mm')
-             : 'N/A',
-         };
-       }
+      if (fileName?.includes('scheduled_notifications')) {
+        return {
+          id: updatedRow?.id || 'N/A',
+          title: updatedRow?.title || 'N/A',
+          message: updatedRow?.message || 'N/A',
+          type: updatedRow?.type || 'N/A',
+          status: updatedRow?.status || 'N/A',
+          schedule_at: updatedRow?.schedule_at
+            ? formatDate(updatedRow?.schedule_at, 'dd-MMM-yyyy HH:mm')
+            : 'N/A',
+          processed_count: updatedRow?.processed_count || 0,
+          failed_count: updatedRow?.failed_count || 0,
+          created_at: updatedRow?.created_at
+            ? formatDate(updatedRow?.created_at, 'dd-MMM-yyyy HH:mm')
+            : 'N/A',
+        };
+      }
 
-       if (fileName?.includes('notifications')) {
-         return {
-           id: updatedRow?.id || 'N/A',
-           receiver: updatedRow?.user?.name || 'N/A',
-           title: updatedRow?.title || 'N/A',
-           message: updatedRow?.message || 'N/A',
-           created_at: updatedRow?.created_at
-             ? formatDate(updatedRow?.created_at, 'dd-MMM-yyyy HH:mm')
-             : 'N/A',
-           is_read: updatedRow?.is_read ? 'Yes' : 'No',
-         };
-       }
-
-     
+      if (fileName?.includes('notifications')) {
+        return {
+          id: updatedRow?.id || 'N/A',
+          receiver: updatedRow?.user?.name || 'N/A',
+          title: updatedRow?.title || 'N/A',
+          message: updatedRow?.message || 'N/A',
+          created_at: updatedRow?.created_at
+            ? formatDate(updatedRow?.created_at, 'dd-MMM-yyyy HH:mm')
+            : 'N/A',
+          is_read: updatedRow?.is_read ? 'Yes' : 'No',
+        };
+      }
 
       return updatedRow;
     });
@@ -175,17 +175,21 @@ const ExportToExcel = ({
 
     // Trigger download
     saveAs(blob, fileName);
-    setIsLoading(false);
+    setIsExportingData(false);
   }
   return (
     <div>
       <Button
         onClick={exportToExcelHandler}
-        disabled={isLoading}
+        disabled={isExporting || isFetchingData}
         className="flex items-center gap-x-2"
       >
         <Download size={16} />
-        {isLoading ? 'Exporting...' : 'Export to Excel'}
+        {isExporting
+          ? 'Exporting...'
+          : isFetchingData
+          ? 'Loading...'
+          : 'Export to Excel'}
       </Button>
     </div>
   );

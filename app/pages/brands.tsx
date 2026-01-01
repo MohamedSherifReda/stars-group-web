@@ -34,7 +34,7 @@ import {
   RotateCcw,
   Trash2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import serveBrandsMeta from '~/meta/serveBrandsMeta';
 import { bannersApi } from '@features/banner/banner.apis';
@@ -70,7 +70,7 @@ const RECOMMENDED_LOGO_ASPECT_RATIO =
   'It is recommended to use an image with a 1.5:1 (width:height) aspect ratio';
 const imgRecommendationClassName = 'text-[10px] text-gray-400 !leading-[0]';
 
-export default function Brands() {
+export default function Brands({ meta }: { meta: any }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [editingDisplayOrderId, setEditingDisplayOrderId] = useState<
@@ -100,6 +100,8 @@ export default function Brands() {
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<any>({});
   const [tempFilters, setTempFilters] = useState<any>({});
+  const [isLoadingExportedBrands, setIsLoadingExportedBrands] = useState(false);
+  const [exportedBrands, setExportedBrands] = useState<Brand[]>([]);
   const queryClient = useQueryClient();
 
   const {
@@ -174,6 +176,66 @@ export default function Brands() {
         .then((res) => res.data),
   });
 
+  async function getAllExportedToExcelBrands(brandsFilters: any) {
+    try {
+      setIsLoadingExportedBrands(true);
+
+      const filters: any = {};
+
+      Object.entries(brandsFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') {
+          if (key === 'created_at') {
+            filters[key] = {
+              $val: new Date(value as string).toISOString(),
+              $op: 'Eq',
+            };
+          } else if (key === 'shop_url') {
+            const urlValue: string = value as string;
+            filters[key] = {
+              $val: urlValue?.endsWith('/')
+                ? (urlValue?.slice(0, -1) as string) // remove the / from the end
+                : urlValue,
+              $op: 'Contains',
+            };
+          } else {
+            filters[key] = {
+              $val: value,
+              $op: 'Contains',
+            };
+          }
+        }
+      });
+
+      const exportedToExcelBrands = await brandsApi.getBrands(
+        {
+          pagination: {
+            take: 10000,
+          },
+          relations: {
+            logo: true,
+            product_picture: true,
+            background_logo: true,
+            banners: true,
+          },
+          orders: {
+            display_order: 'asc',
+          },
+          filters: filters,
+        },
+        {
+          'x-skip-translations': true,
+        }
+      );
+
+      const exportedBrands = exportedToExcelBrands?.data?.data || [];
+      setExportedBrands(exportedBrands);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to fetch export brands. Please try again later!');
+    } finally {
+      setIsLoadingExportedBrands(false);
+    }
+  }
   const uploadMutation = useMutation({
     mutationFn: (file: File) => mediaApi.upload(file),
   });
@@ -636,6 +698,10 @@ export default function Brands() {
     setIsFilterSidebarOpen(true);
   };
 
+  useEffect(() => {
+    getAllExportedToExcelBrands(appliedFilters);
+  }, [appliedFilters]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -949,8 +1015,9 @@ export default function Brands() {
 
           <ExportToExcel
             fileName="brands.xlsx"
-            data={brands?.data ?? []}
+            data={exportedBrands ?? []}
             excludedCols={excludedFromExcelExport}
+            isFetchingData={isLoadingExportedBrands}
           />
         </div>
       </div>
