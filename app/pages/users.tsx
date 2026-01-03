@@ -10,7 +10,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Badge } from '@ui/common/badge';
 import serveUsersMeta from '~/meta/serveUsersMeta';
 import { DataTable } from '@ui/common/data-table';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import DeleteItemAlert from '@ui/common/DeleteItemAlert';
 import { queryClient } from '@utils/queryClient';
 import toast from 'react-hot-toast';
@@ -27,6 +27,8 @@ import { Input } from '@ui/common/input';
 import UsersFilters from '@features/user/components/UsersFilters';
 import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 import { usersCols } from '@features/user/UserCols';
+import type { User } from 'core/types/user.types';
+import { brandsApi } from '@features/brand/brand.apis';
 
 export const meta = serveUsersMeta;
 
@@ -37,7 +39,8 @@ export default function Users() {
   const [appliedFilters, setAppliedFilters] = useState<any>({});
   const [tempFilters, setTempFilters] = useState<any>({});
   const [searchValue, setSearchValue] = useState<string>('');
-
+  const [isLoadingExportedUsers, setIsLoadingExportedUsers] = useState(false);
+  const [exportedUsers, setExportedUsers] = useState<User[]>([]);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const {
     data: users = { data: [], meta: { total: 0, skip: 0, take: 0 } },
@@ -191,6 +194,61 @@ export default function Users() {
     setCurrentPage(1);
   };
 
+  async function getAllExportedToExcelUsers(usersFilters: any) {
+    try {
+      setIsLoadingExportedUsers(true);
+      const filters: any = {};
+      Object.entries(usersFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') {
+          if (key === 'account_verified') {
+            filters[key] = {
+              $val: value === 'true',
+              $op: 'Is',
+            };
+          } else if (key === 'role' || key === 'rank') {
+            filters[key] = {
+              $val: key === 'rank' ? Number(value) : value,
+              $op: 'Eq',
+            };
+          } else if (key === 'id') {
+            filters[key] = {
+              $val: Number(value),
+              $op: 'Eq',
+            };
+          } else if (key === 'created_at' || key === 'birthdate') {
+            filters[key] = {
+              $val: new Date(value as string).toISOString(),
+              $op: 'Eq',
+            };
+          } else {
+            filters[key] = {
+              $val: value,
+              $op: 'Contains',
+            };
+          }
+        }
+      });
+
+      const exportedToExcelUsers = await usersApi.getUsers({
+        pagination: {
+          take: 10000,
+        },
+        filters: filters,
+      });
+
+      const exportedUsersArr = exportedToExcelUsers?.data?.data || [];
+      setExportedUsers(exportedUsersArr);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to fetch export users. Please try again later!');
+    } finally {
+      setIsLoadingExportedUsers(false);
+    }
+  }
+  // loading all of the brands that match the applied filters to prepare them for export to excel...
+  useEffect(() => {
+    getAllExportedToExcelUsers(appliedFilters);
+  }, [appliedFilters]);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -202,7 +260,7 @@ export default function Users() {
         </div>
         <div className="flex items-center gap-x-2">
           <ExportToExcel
-            data={users?.data || []}
+            data={exportedUsers || []}
             excludedCols={excludedUsersColsFromExport}
             fileName="users.xlsx"
           />
