@@ -79,6 +79,11 @@ import {
 import NotificationsFilters from '@features/notification/components/NotificationsFilters';
 import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 
+import {
+  getAllExportedToExcelNotifications,
+  getAllExportedToExcelScheduledNotifications,
+} from '@features/notification/helpers';
+
 export const meta = serveNotificationsMeta;
 
 const redirectionUrls = [
@@ -151,6 +156,14 @@ export default function Notifications() {
     useState<Notification | null>(null);
   const [activeTab, setActiveTab] = useState('all');
 
+  // Reset filters and pagination when switching tabs
+  useEffect(() => {
+    setAppliedFilters({});
+    setTempFilters({});
+    setCurrentPage(1);
+    setScheduledCurrentPage(1);
+  }, [activeTab]);
+
   // Pagination state for all notifications
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -163,7 +176,17 @@ export default function Notifications() {
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<any>({});
   const [tempFilters, setTempFilters] = useState<any>({});
-
+  const [isLoadingExportedNotifications, setIsLoadingExportedNotifications] =
+    useState(false);
+  const [
+    isLoadingExportedScheduledNotifications,
+    setIsLoadingExportedScheduledNotifications,
+  ] = useState(false);
+  const [exportedNotifications, setExportedNotifications] = useState<
+    Notification[]
+  >([]);
+  const [exportedScheduledNotifications, setExportedScheduledNotifications] =
+    useState<ScheduledNotification[]>([]);
   const queryClient = useQueryClient();
 
   // Pagination state for brands used in the SelectInput
@@ -196,8 +219,20 @@ export default function Notifications() {
     queryKey: ['notifications', currentPage, pageSize, appliedFilters],
     queryFn: () => {
       const filters: any = {};
+      const notificationsFilters = [
+        'title',
+        'message',
+        'link',
+        'is_read',
+        'created_at',
+      ];
       Object.entries(appliedFilters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '' && value !== 'all') {
+        if (
+          value !== undefined &&
+          value !== '' &&
+          value !== 'all' &&
+          notificationsFilters.includes(key)
+        ) {
           if (key === 'created_at') {
             filters[key] = {
               $val: new Date(value as string).toISOString(),
@@ -247,15 +282,35 @@ export default function Notifications() {
     ],
     queryFn: () => {
       const filters: any = {};
+      const scheduledFilters = [
+        'title',
+        'message',
+        'status',
+        'type',
+        'schedule_at',
+        'processed_count',
+        'failed_count',
+        'created_at',
+      ];
       Object.entries(appliedFilters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '' && value !== 'all') {
-          if (key === 'created_at') {
+        if (
+          value !== undefined &&
+          value !== '' &&
+          value !== 'all' &&
+          scheduledFilters.includes(key)
+        ) {
+          if (key === 'created_at' || key === 'schedule_at') {
             filters[key] = {
               $val: new Date(value as string).toISOString(),
 
               $op: 'Eq',
             };
-          } else if (key !== 'is_read') {
+          } else if (key === 'processed_count' || key === 'failed_count') {
+            filters[key] = {
+              $val: parseInt(value as string, 10),
+              $op: 'Eq',
+            };
+          } else {
             filters[key] = {
               $val: value,
               $op: 'Contains',
@@ -711,6 +766,20 @@ export default function Notifications() {
     },
   ];
 
+  // loading all of the banners that match the applied filters to prepare them for export to excel...
+  useEffect(() => {
+    getAllExportedToExcelNotifications(
+      appliedFilters,
+      setIsLoadingExportedNotifications,
+      setExportedNotifications
+    );
+    getAllExportedToExcelScheduledNotifications(
+      appliedFilters,
+      setIsLoadingExportedScheduledNotifications,
+      setExportedScheduledNotifications
+    );
+  }, [appliedFilters]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -746,10 +815,14 @@ export default function Notifications() {
             )}
           </Button>
           <ExportToExcel
+            isFetchingData={
+              isLoadingExportedNotifications ||
+              isLoadingExportedScheduledNotifications
+            }
             data={
               activeTab === 'all'
-                ? notifications || []
-                : scheduledNotifications || []
+                ? exportedNotifications || []
+                : exportedScheduledNotifications || []
             }
             fileName={
               activeTab === 'all'
@@ -1114,6 +1187,7 @@ export default function Notifications() {
             tempFilters={tempFilters}
             setTempFilters={setTempFilters}
             redirectionUrls={redirectionUrls?.slice(0, 2)}
+            activeTab={activeTab}
           />
 
           <SheetFooter className="border-t pt-4 flex-row gap-2 mt-auto">

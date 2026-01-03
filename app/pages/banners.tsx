@@ -57,6 +57,7 @@ import {
 import BannersFilters from '@features/banner/components/BannersFilters';
 import { Badge } from '@ui/common/badge';
 import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
+import { getAllExportedToExcelBanners } from '@features/banner/helpers';
 
 export const meta = serveBannersMeta;
 
@@ -426,62 +427,13 @@ export default function Banners() {
     },
   ];
 
-  async function getAllExportedToExcelUsers(usersFilters: any) {
-    try {
-      setIsLoadingExportedBanners(true);
-      const filters: any = {};
-      Object.entries(appliedFilters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '' && value !== 'all') {
-          if (key === 'created_at') {
-            filters[key] = {
-              $val: new Date(value as string).toISOString(),
-              $op: 'Eq',
-            };
-          } else if (key === 'brand_id') {
-            filters[key] = {
-              $val: value,
-              $op: 'Eq',
-            };
-          } else if (key === 'redirect_url') {
-            const urlValue = value as string;
-            filters[key] = {
-              $val: urlValue?.endsWith('/') ? urlValue?.slice(0, -1) : urlValue,
-              $op: 'Contains',
-            };
-          } else {
-            filters[key] = {
-              $val: value,
-              $op: 'Contains',
-            };
-          }
-        }
-      });
-
-      const exportedToExcelBanners = await bannersApi.getBanners({
-        relations: {
-          image_ar: true,
-          image_en: true,
-          brand: true,
-        },
-        includeAllBranded: true,
-        pagination: {
-          take: 10000,
-        },
-        filters: filters,
-      });
-
-      const exportedBannersArr = exportedToExcelBanners?.data?.data || [];
-      setExportedBanners(exportedBannersArr);
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to fetch export users. Please try again later!');
-    } finally {
-      setIsLoadingExportedBanners(false);
-    }
-  }
-  // loading all of the brands that match the applied filters to prepare them for export to excel...
+  // loading all of the banners that match the applied filters to prepare them for export to excel...
   useEffect(() => {
-    getAllExportedToExcelUsers(appliedFilters);
+    getAllExportedToExcelBanners(
+      appliedFilters,
+      setIsLoadingExportedBanners,
+      setExportedBanners
+    );
   }, [appliedFilters]);
 
   return (

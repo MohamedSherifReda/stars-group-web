@@ -29,6 +29,7 @@ import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 import { usersCols } from '@features/user/UserCols';
 import type { User } from 'core/types/user.types';
 import { brandsApi } from '@features/brand/brand.apis';
+import { getAllExportedToExcelUsers } from '@features/user/helpers';
 
 export const meta = serveUsersMeta;
 
@@ -194,60 +195,13 @@ export default function Users() {
     setCurrentPage(1);
   };
 
-  async function getAllExportedToExcelUsers(usersFilters: any) {
-    try {
-      setIsLoadingExportedUsers(true);
-      const filters: any = {};
-      Object.entries(usersFilters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '' && value !== 'all') {
-          if (key === 'account_verified') {
-            filters[key] = {
-              $val: value === 'true',
-              $op: 'Is',
-            };
-          } else if (key === 'role' || key === 'rank') {
-            filters[key] = {
-              $val: key === 'rank' ? Number(value) : value,
-              $op: 'Eq',
-            };
-          } else if (key === 'id') {
-            filters[key] = {
-              $val: Number(value),
-              $op: 'Eq',
-            };
-          } else if (key === 'created_at' || key === 'birthdate') {
-            filters[key] = {
-              $val: new Date(value as string).toISOString(),
-              $op: 'Eq',
-            };
-          } else {
-            filters[key] = {
-              $val: value,
-              $op: 'Contains',
-            };
-          }
-        }
-      });
-
-      const exportedToExcelUsers = await usersApi.getUsers({
-        pagination: {
-          take: 10000,
-        },
-        filters: filters,
-      });
-
-      const exportedUsersArr = exportedToExcelUsers?.data?.data || [];
-      setExportedUsers(exportedUsersArr);
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to fetch export users. Please try again later!');
-    } finally {
-      setIsLoadingExportedUsers(false);
-    }
-  }
-  // loading all of the brands that match the applied filters to prepare them for export to excel...
+  // loading all of the users that match the applied filters to prepare them for export to excel...
   useEffect(() => {
-    getAllExportedToExcelUsers(appliedFilters);
+    getAllExportedToExcelUsers(
+      appliedFilters,
+      setIsLoadingExportedUsers,
+      setExportedUsers
+    );
   }, [appliedFilters]);
   return (
     <div className="space-y-6">

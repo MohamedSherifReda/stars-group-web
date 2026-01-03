@@ -20,7 +20,9 @@ const ExportToExcel = ({
 }: ExportToExcelProps) => {
   const [isExporting, setIsExportingData] = useState(false);
 
+
   function exportToExcelHandler() {
+  console.log('received data', data);
     setIsExportingData(true);
     // Create a new workbook
     const workbook = XLSX.utils.book_new();
