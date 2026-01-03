@@ -263,6 +263,7 @@ export default function Users() {
             data={exportedUsers || []}
             excludedCols={excludedUsersColsFromExport}
             fileName="users.xlsx"
+            isFetchingData={isLoadingExportedUsers}
           />
           <Button
             variant="outline"

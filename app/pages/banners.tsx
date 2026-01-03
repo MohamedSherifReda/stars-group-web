@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -85,6 +85,9 @@ export default function Banners() {
   const [tempFilters, setTempFilters] = useState<any>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isLoadingExportedBanners, setIsLoadingExportedBanners] =
+    useState(false);
+  const [exportedBanners, setExportedBanners] = useState<Banner[]>([]);
   const queryClient = useQueryClient();
 
   const excludedBannersColsFromExport = [
@@ -136,11 +139,11 @@ export default function Banners() {
             image_en: true,
             brand: true,
           },
+          includeAllBranded: true,
           pagination: {
             skip: (currentPage - 1) * pageSize,
             take: pageSize,
           },
-          includeAllBranded: true,
           filters,
         })
         .then((res) => res.data);
@@ -423,6 +426,64 @@ export default function Banners() {
     },
   ];
 
+  async function getAllExportedToExcelUsers(usersFilters: any) {
+    try {
+      setIsLoadingExportedBanners(true);
+      const filters: any = {};
+      Object.entries(appliedFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== 'all') {
+          if (key === 'created_at') {
+            filters[key] = {
+              $val: new Date(value as string).toISOString(),
+              $op: 'Eq',
+            };
+          } else if (key === 'brand_id') {
+            filters[key] = {
+              $val: value,
+              $op: 'Eq',
+            };
+          } else if (key === 'redirect_url') {
+            const urlValue = value as string;
+            filters[key] = {
+              $val: urlValue?.endsWith('/') ? urlValue?.slice(0, -1) : urlValue,
+              $op: 'Contains',
+            };
+          } else {
+            filters[key] = {
+              $val: value,
+              $op: 'Contains',
+            };
+          }
+        }
+      });
+
+      const exportedToExcelBanners = await bannersApi.getBanners({
+        relations: {
+          image_ar: true,
+          image_en: true,
+          brand: true,
+        },
+        includeAllBranded: true,
+        pagination: {
+          take: 10000,
+        },
+        filters: filters,
+      });
+
+      const exportedBannersArr = exportedToExcelBanners?.data?.data || [];
+      setExportedBanners(exportedBannersArr);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to fetch export users. Please try again later!');
+    } finally {
+      setIsLoadingExportedBanners(false);
+    }
+  }
+  // loading all of the brands that match the applied filters to prepare them for export to excel...
+  useEffect(() => {
+    getAllExportedToExcelUsers(appliedFilters);
+  }, [appliedFilters]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -458,9 +519,10 @@ export default function Banners() {
           </Button>
 
           <ExportToExcel
-            data={banners?.data || []}
+            data={exportedBanners || []}
             excludedCols={excludedBannersColsFromExport}
             fileName="banners.xlsx"
+            isFetchingData={isLoadingExportedBanners}
           />
 
           <Dialog
