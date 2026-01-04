@@ -99,6 +99,10 @@ const redirectionUrls = [
     label: '/brand/id',
     value: '/brand/id',
   },
+  {
+    label: '/SDK',
+    value: '/sdk',
+  },
 ];
 
 export default function Notifications() {
