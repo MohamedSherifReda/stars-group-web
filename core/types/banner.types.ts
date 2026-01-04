@@ -4,7 +4,7 @@ import type { Media } from './common.types';
 export interface Banner {
   id: number;
   promotion_name: string;
-  redirect_url?: string;
+  redirect_url?: string | null;
   image_en_id: number;
   image_ar_id: number;
   created_at: string;

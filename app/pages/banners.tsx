@@ -63,7 +63,7 @@ export const meta = serveBannersMeta;
 
 interface BannerFormData {
   promotion_name: string;
-  redirect_url?: string;
+  redirect_url?: string | null;
   brand_id?: string | number | null;
 }
 
@@ -228,8 +228,8 @@ export default function Banners() {
         imageArId = imageArResponse.data?.data?.id;
       }
 
-      //if the redirect url is empty or falsy value, then delete it as it is already optional.
-      if (!formData.redirect_url) {
+      //if the redirect url is empty or falsy value, then delete it as it is already optional. (During Creating only)
+      if (!formData.redirect_url && !editingBanner) {
         delete formData.redirect_url;
       }
 
@@ -238,7 +238,7 @@ export default function Banners() {
           ...formData,
           ...(imageEnId && { image_en_id: imageEnId }),
           ...(imageArId && { image_ar_id: imageArId }),
-
+          redirect_url: formData?.redirect_url ? formData.redirect_url : null,
           brand_id: formData?.brand_id
             ? parseInt(formData.brand_id as string)
             : null,
@@ -520,7 +520,7 @@ export default function Banners() {
                     <Input
                       id="redirect_url"
                       type="url"
-                      value={formData.redirect_url}
+                      value={formData?.redirect_url || ''}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
@@ -727,7 +727,7 @@ export default function Banners() {
                 <Input
                   id="edit_redirect_url"
                   type="url"
-                  value={formData.redirect_url}
+                  value={formData?.redirect_url || ''}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
