@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { Notification, ScheduledNotification } from "core/types/notification.types";
 import { notificationsApi } from "../notification.apis";
 
-const MAX_EXPORTED_RECORDS_COUNT = 100000;
+const MAX_EXPORTED_RECORDS_COUNT = 1000000;
 
 export async function getAllExportedToExcelNotifications(
   appliedFilters: any,

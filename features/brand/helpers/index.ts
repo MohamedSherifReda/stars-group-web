@@ -2,7 +2,7 @@ import { brandsApi } from "../brand.apis";
 import toast from "react-hot-toast";
 import type { Dispatch, SetStateAction } from "react";
 
-const MAX_EXPORTED_RECORDS_COUNT = 100000;
+const MAX_EXPORTED_RECORDS_COUNT = 1000000;
 
 export async function getAllExportedToExcelBrands(
   brandsFilters: any,

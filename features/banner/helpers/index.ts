@@ -3,7 +3,7 @@ import { bannersApi } from "../banner.apis";
 import toast from "react-hot-toast";
 
 
-const MAX_EXPORTED_RECORDS_COUNT = 100000;
+const MAX_EXPORTED_RECORDS_COUNT = 1000000;
 
 export async function getAllExportedToExcelBanners(
   appliedFilters: any,
