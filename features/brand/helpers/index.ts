@@ -2,7 +2,13 @@ import { brandsApi } from "../brand.apis";
 import toast from "react-hot-toast";
 import type { Dispatch, SetStateAction } from "react";
 
-export async function getAllExportedToExcelBrands(brandsFilters: any, loaderSetter: Dispatch<SetStateAction<boolean>>, exportedBrandsSetter: Dispatch<SetStateAction<any>>) {
+const MAX_EXPORTED_RECORDS_COUNT = 100000;
+
+export async function getAllExportedToExcelBrands(
+  brandsFilters: any,
+  loaderSetter: Dispatch<SetStateAction<boolean>>,
+  exportedBrandsSetter: Dispatch<SetStateAction<any>>
+) {
   try {
     loaderSetter(true);
 
@@ -35,7 +41,7 @@ export async function getAllExportedToExcelBrands(brandsFilters: any, loaderSett
     const exportedToExcelBrands = await brandsApi.getBrands(
       {
         pagination: {
-          take: 10000,
+          take: MAX_EXPORTED_RECORDS_COUNT,
         },
         relations: {
           logo: true,

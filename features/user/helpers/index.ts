@@ -2,7 +2,13 @@ import toast from "react-hot-toast";
 import { usersApi } from "../user.apis";
 import type { Dispatch, SetStateAction } from "react";
 
-export async function getAllExportedToExcelUsers(usersFilters: any, loaderSetter: Dispatch<SetStateAction<boolean>>, exportedUsersSetter: Dispatch<SetStateAction<any>>) {
+const MAX_EXPORTED_RECORDS_COUNT = 100000;
+
+export async function getAllExportedToExcelUsers(
+  usersFilters: any,
+  loaderSetter: Dispatch<SetStateAction<boolean>>,
+  exportedUsersSetter: Dispatch<SetStateAction<any>>
+) {
   try {
     loaderSetter(true);
     const filters: any = {};
@@ -39,7 +45,7 @@ export async function getAllExportedToExcelUsers(usersFilters: any, loaderSetter
 
     const exportedToExcelUsers = await usersApi.getUsers({
       pagination: {
-        take: 10000,
+        take: MAX_EXPORTED_RECORDS_COUNT,
       },
       filters: filters,
     });

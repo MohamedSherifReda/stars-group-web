@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { Notification, ScheduledNotification } from "core/types/notification.types";
 import { notificationsApi } from "../notification.apis";
 
+const MAX_EXPORTED_RECORDS_COUNT = 100000;
 
 export async function getAllExportedToExcelNotifications(
   appliedFilters: any,
@@ -13,9 +14,20 @@ export async function getAllExportedToExcelNotifications(
   try {
     loaderSetter(true);
     const filters: any = {};
-    const notificationsFilters = ['title', 'message', 'link', 'is_read', 'created_at'];
+    const notificationsFilters = [
+      'title',
+      'message',
+      'link',
+      'is_read',
+      'created_at',
+    ];
     Object.entries(appliedFilters).forEach(([key, value]) => {
-      if (value !== undefined && value !== '' && value !== 'all' && notificationsFilters.includes(key)) {
+      if (
+        value !== undefined &&
+        value !== '' &&
+        value !== 'all' &&
+        notificationsFilters.includes(key)
+      ) {
         if (key === 'created_at') {
           filters[key] = {
             $val: new Date(value as string).toISOString(),
@@ -43,7 +55,7 @@ export async function getAllExportedToExcelNotifications(
         created_at: 'desc',
       },
       pagination: {
-        take: 10000,
+        take: MAX_EXPORTED_RECORDS_COUNT,
       },
       filters: filters,
     });
@@ -107,7 +119,7 @@ export async function getAllExportedToExcelScheduledNotifications(
         created_at: 'desc',
       },
       pagination: {
-        take: 10000,
+        take: MAX_EXPORTED_RECORDS_COUNT,
       },
       filters: filters,
     });
