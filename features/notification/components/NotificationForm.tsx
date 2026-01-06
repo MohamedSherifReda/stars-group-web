@@ -60,7 +60,8 @@ const notificationSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['brand_id'],
-        message: 'Brand is required when link is provided',
+        message:
+          'Brand is required when redirect to specific brand is provided',
       });
     }
   });
@@ -171,16 +172,29 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
         <Label htmlFor="title">
           Title <span className="text-red-500">*</span>
         </Label>
-        <Input id="title" {...register('title')} placeholder="Enter notification title" />
-        {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
+        <Input
+          id="title"
+          {...register('title')}
+          placeholder="Enter notification title"
+        />
+        {errors.title && (
+          <p className="text-sm text-red-500">{errors.title.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="message">
           Message <span className="text-red-500">*</span>
         </Label>
-        <Textarea id="message" {...register('message')} placeholder="Enter notification message" rows={4} />
-        {errors.message && <p className="text-sm text-red-500">{errors.message.message}</p>}
+        <Textarea
+          id="message"
+          {...register('message')}
+          placeholder="Enter notification message"
+          rows={4}
+        />
+        {errors.message && (
+          <p className="text-sm text-red-500">{errors.message.message}</p>
+        )}
       </div>
 
       {/* Redirect URL */}
@@ -207,7 +221,7 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                 <SelectContent>
                   {redirectionUrls.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
-                      {item.label}
+                      Redirect to: {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -215,8 +229,12 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
             </Field>
           )}
         />
-        {errors.link && <p className="text-sm text-red-500">{errors.link.message}</p>}
-        <p className="text-sm text-gray-500">Optional: Add a link to direct users to a specific page</p>
+        {errors.link && (
+          <p className="text-sm text-red-500">{errors.link.message}</p>
+        )}
+        <p className="text-sm text-gray-500">
+          Optional: Add a link to direct users to a specific page
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -241,7 +259,9 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
             <p className="text-sm text-gray-600">
               {selectedUsers.includes(ALL_USERS_VALUE)
                 ? 'Broadcasting to all users'
-                : `${selectedUsers.length} user${selectedUsers.length !== 1 ? 's' : ''} selected`}
+                : `${selectedUsers.length} user${
+                    selectedUsers.length !== 1 ? 's' : ''
+                  } selected`}
             </p>
           )}
         </div>
@@ -249,7 +269,9 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
         {/* Brand (Conditional) */}
         {notificationLinkValue === '/brand/id' && (
           <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-            <Label htmlFor="brand_id">Brand <span className="text-red-500">*</span></Label>
+            <Label htmlFor="brand_id">
+              Brand <span className="text-red-500">*</span>
+            </Label>
             <SelectInput
               options={allBrands.map((brand: Brand) => ({
                 label: brand.name,
@@ -265,13 +287,22 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
               isLoadingMore={isFetchingBrands}
               onLoadMore={onLoadMoreBrands}
             />
-            {errors.brand_id && <p className="text-sm text-red-500">{errors.brand_id.message}</p>}
+            {errors.brand_id && (
+              <p className="text-sm text-red-500">{errors.brand_id.message}</p>
+            )}
           </div>
         )}
 
         {/* Schedule date and time */}
-        <div className={cn("space-y-2", notificationLinkValue === '/brand/id' && "col-span-2")}>
-          <Label htmlFor="scheduled_at">Schedule Date and Time (Optional)</Label>
+        <div
+          className={cn(
+            'space-y-2',
+            notificationLinkValue === '/brand/id' && 'col-span-2'
+          )}
+        >
+          <Label htmlFor="scheduled_at">
+            Schedule Date and Time (Optional)
+          </Label>
           <Controller
             name="scheduled_at"
             control={control}
@@ -281,10 +312,15 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className={cn('flex-1 justify-start text-left font-normal', !field.value && 'text-muted-foreground')}
+                      className={cn(
+                        'flex-1 justify-start text-left font-normal',
+                        !field.value && 'text-muted-foreground'
+                      )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value ? format(new Date(field.value), 'PPP p') : 'Pick a date and time'}
+                      {field.value
+                        ? format(new Date(field.value), 'PPP p')
+                        : 'Pick a date and time'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -293,13 +329,17 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                       selected={field.value ? new Date(field.value) : undefined}
                       onSelect={(date) => {
                         if (date) {
-                          const currentDate = field.value ? new Date(field.value) : new Date();
+                          const currentDate = field.value
+                            ? new Date(field.value)
+                            : new Date();
                           date.setHours(currentDate.getHours());
                           date.setMinutes(currentDate.getMinutes());
                           field.onChange(date.toISOString());
                         }
                       }}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      disabled={(date) =>
+                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                      }
                       initialFocus
                     />
                     <div className="border-t p-3">
@@ -310,10 +350,19 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                           min="0"
                           max="23"
                           placeholder="HH"
-                          value={field.value ? new Date(field.value).getHours().toString().padStart(2, '0') : ''}
+                          value={
+                            field.value
+                              ? new Date(field.value)
+                                  .getHours()
+                                  .toString()
+                                  .padStart(2, '0')
+                              : ''
+                          }
                           onChange={(e) => {
                             const hours = parseInt(e.target.value) || 0;
-                            const date = field.value ? new Date(field.value) : new Date();
+                            const date = field.value
+                              ? new Date(field.value)
+                              : new Date();
                             date.setHours(hours);
                             field.onChange(date.toISOString());
                           }}
@@ -325,10 +374,19 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                           min="0"
                           max="59"
                           placeholder="MM"
-                          value={field.value ? new Date(field.value).getMinutes().toString().padStart(2, '0') : ''}
+                          value={
+                            field.value
+                              ? new Date(field.value)
+                                  .getMinutes()
+                                  .toString()
+                                  .padStart(2, '0')
+                              : ''
+                          }
                           onChange={(e) => {
                             const minutes = parseInt(e.target.value) || 0;
-                            const date = field.value ? new Date(field.value) : new Date();
+                            const date = field.value
+                              ? new Date(field.value)
+                              : new Date();
                             date.setMinutes(minutes);
                             field.onChange(date.toISOString());
                           }}
@@ -339,15 +397,26 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                   </PopoverContent>
                 </Popover>
                 {field.value && (
-                  <Button type="button" variant="outline" onClick={() => field.onChange(undefined)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => field.onChange(undefined)}
+                  >
                     Clear
                   </Button>
                 )}
               </div>
             )}
           />
-          <p className="text-sm text-gray-500">Leave empty to send immediately, or select a date and time to schedule</p>
-          {errors.scheduled_at && <p className="text-sm text-red-500">{errors.scheduled_at.message}</p>}
+          <p className="text-sm text-gray-500">
+            Leave empty to send immediately, or select a date and time to
+            schedule
+          </p>
+          {errors.scheduled_at && (
+            <p className="text-sm text-red-500">
+              {errors.scheduled_at.message}
+            </p>
+          )}
         </div>
       </div>
 

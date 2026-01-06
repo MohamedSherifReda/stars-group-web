@@ -1,6 +1,6 @@
 export const redirectionUrls = [
-  { label: '/brand', value: '/brand' },
-  { label: '/home', value: '/home' },
-  { label: '/brand/id', value: '/brand/id' },
-  { label: '/SDK', value: '/sdk' },
+  { label: 'Brands Page', value: '/brand' },
+  { label: 'Home Page', value: '/home' },
+  { label: 'Loyalty Program', value: '/sdk' },
+  { label: 'Specific Brand', value: '/brand/id' },
 ];

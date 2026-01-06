@@ -64,7 +64,7 @@ const NotificationsFilters = ({
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="all">All</SelectItem>
-                  {redirectionUrls.map((url) => (
+                  {redirectionUrls?.map((url) => (
                     <SelectItem key={url.value} value={url.value}>
                       {url.label}
                     </SelectItem>

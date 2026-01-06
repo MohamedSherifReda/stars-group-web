@@ -616,7 +616,7 @@ export default function Notifications() {
           <NotificationsFilters
             tempFilters={tempFilters}
             setTempFilters={setTempFilters}
-            redirectionUrls={redirectionUrls?.slice(0, 2)}
+            redirectionUrls={redirectionUrls}
             activeTab={activeTab}
           />
 
