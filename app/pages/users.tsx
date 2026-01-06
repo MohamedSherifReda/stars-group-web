@@ -28,7 +28,7 @@ import UsersFilters from '@features/user/components/UsersFilters';
 import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 import { usersCols } from '@features/user/UserCols';
 import type { User } from 'core/types/user.types';
-import { brandsApi } from '@features/brand/brand.apis';
+
 import { getAllExportedToExcelUsers } from '@features/user/helpers';
 
 export const meta = serveUsersMeta;
@@ -98,10 +98,15 @@ export default function Users() {
   const deleteUserMutation = useMutation({
     mutationKey: ['delete-user'],
     mutationFn: (id: number) => usersApi.deleteUser(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('User deleted successfully');
       setDeleteUserId(null);
+      await getAllExportedToExcelUsers(
+        appliedFilters,
+        setIsLoadingExportedUsers,
+        setExportedUsers
+      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete user');
