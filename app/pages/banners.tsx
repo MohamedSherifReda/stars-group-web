@@ -165,11 +165,17 @@ export default function Banners() {
   // Create banner mutation
   const createMutation = useMutation({
     mutationFn: (banner: Partial<Banner>) => bannersApi.createBanner(banner),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['banners'] });
       setIsCreateOpen(false);
       resetForm();
       toast.success('Banner created successfully');
+      // refresh the exported to excel records
+      await getAllExportedToExcelBanners(
+        appliedFilters,
+        setIsLoadingExportedBanners,
+        setExportedBanners
+      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create banner');
@@ -179,11 +185,17 @@ export default function Banners() {
   const updateMutation = useMutation({
     mutationFn: ({ id, banner }: { id: number; banner: Partial<Banner> }) =>
       bannersApi.updateBanner(id, banner),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['banners'] });
       setEditingBanner(null);
       resetForm();
       toast.success('Banner updated successfully');
+      // refresh the exported to excel records
+      await getAllExportedToExcelBanners(
+        appliedFilters,
+        setIsLoadingExportedBanners,
+        setExportedBanners
+      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update banner');
@@ -192,9 +204,15 @@ export default function Banners() {
   // delete banner mutation.
   const deleteMutation = useMutation({
     mutationFn: (id: number) => bannersApi.deleteBanner(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['banners'] });
       toast.success('Banner deleted successfully');
+      // refresh the exported to excel records
+      await getAllExportedToExcelBanners(
+        appliedFilters,
+        setIsLoadingExportedBanners,
+        setExportedBanners
+      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete banner');
@@ -277,7 +295,7 @@ export default function Banners() {
     });
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this banner?')) {
       deleteMutation.mutate(id);
     }
@@ -417,7 +435,7 @@ export default function Banners() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleDelete(banner.id)}
+              onClick={async () => await handleDelete(banner.id)}
             >
               <Trash2 className="w-4 h-4" />
             </Button>

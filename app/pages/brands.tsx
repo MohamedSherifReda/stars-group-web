@@ -183,11 +183,17 @@ export default function Brands({ meta }: { meta: any }) {
 
   const createMutation = useMutation({
     mutationFn: (brand: Partial<Brand>) => brandsApi.createBrand(brand),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setIsCreateOpen(false);
       resetForm();
       toast.success('Brand created successfully');
+      // refresh the exported brands data after creating or updating a brand.
+      await getAllExportedToExcelBrands(
+        appliedFilters,
+        setIsLoadingExportedBrands,
+        setExportedBrands
+      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create brand');
@@ -197,11 +203,17 @@ export default function Brands({ meta }: { meta: any }) {
   const updateMutation = useMutation({
     mutationFn: ({ id, brand }: { id: number; brand: Partial<Brand> }) =>
       brandsApi.updateBrand(id, brand),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingBrand(null);
       resetForm();
       toast.success('Brand updated successfully');
+      // refresh the exported brands data after creating or updating a brand.
+      await getAllExportedToExcelBrands(
+        appliedFilters,
+        setIsLoadingExportedBrands,
+        setExportedBrands
+      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update brand');
@@ -233,9 +245,15 @@ export default function Brands({ meta }: { meta: any }) {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => brandsApi.deleteBrand(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       toast.success('Brand deleted successfully');
+      // refresh the exported brands data after deleting a brand.
+      await getAllExportedToExcelBrands(
+        appliedFilters,
+        setIsLoadingExportedBrands,
+        setExportedBrands
+      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete brand');

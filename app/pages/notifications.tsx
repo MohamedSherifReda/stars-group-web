@@ -246,12 +246,23 @@ export default function Notifications() {
   const createMutation = useMutation({
     mutationFn: (notification: CreateNotificationPayload) =>
       notificationsApi.createNotification(notification),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       setIsCreateOpen(false);
       setCurrentPage(1);
       toast.success('Notification created successfully');
+      // refresh the exported notifications data after creating a notification.
+      await getAllExportedToExcelNotifications(
+        appliedFilters,
+        setIsLoadingExportedNotifications,
+        setExportedNotifications
+      );
+      await getAllExportedToExcelScheduledNotifications(
+        appliedFilters,
+        setIsLoadingExportedScheduledNotifications,
+        setExportedScheduledNotifications
+      );
     },
     onError: (error: any) => {
       toast.error(
@@ -264,12 +275,23 @@ export default function Notifications() {
   const broadcastMutation = useMutation({
     mutationFn: (notification: BroadCastNotificationPayload) =>
       notificationsApi.broadcastNotification(notification),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       setIsCreateOpen(false);
       setCurrentPage(1);
       toast.success('Notification broadcasted to all users successfully');
+      // refresh the exported notifications data after broadcasting a notification.
+      await getAllExportedToExcelNotifications(
+        appliedFilters,
+        setIsLoadingExportedNotifications,
+        setExportedNotifications
+      );
+      await getAllExportedToExcelScheduledNotifications(
+        appliedFilters,
+        setIsLoadingExportedScheduledNotifications,
+        setExportedScheduledNotifications
+      );
     },
     onError: (error: any) => {
       toast.error(
@@ -281,10 +303,21 @@ export default function Notifications() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.deleteNotification(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       toast.success('Notification deleted successfully');
+      // refresh the exported notifications data after deleting a notification.
+      await getAllExportedToExcelNotifications(
+        appliedFilters,
+        setIsLoadingExportedNotifications,
+        setExportedNotifications
+      );
+      await getAllExportedToExcelScheduledNotifications(
+        appliedFilters,
+        setIsLoadingExportedScheduledNotifications,
+        setExportedScheduledNotifications
+      );
     },
     onError: (error: any) => {
       toast.error(
@@ -294,7 +327,7 @@ export default function Notifications() {
   });
 
   // Handle notification form submission
-  const handleNotificationSubmit = (
+  const handleNotificationSubmit = async (
     payload: CreateNotificationPayload | BroadCastNotificationPayload,
     isBroadcast: boolean
   ) => {
@@ -305,7 +338,7 @@ export default function Notifications() {
     }
   };
 
-  const handleDelete = (notification: Notification) => {
+  const handleDelete = async (notification: Notification) => {
     if (notification.status === 'sent') {
       toast.error('Cannot delete a notification that has already been sent');
       return;
