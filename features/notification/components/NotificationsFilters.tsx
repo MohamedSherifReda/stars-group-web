@@ -8,12 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ui/common/select';
+import type { Brand } from 'core/types/brand.types';
 
 interface NotificationsFiltersProps {
   tempFilters: any;
   setTempFilters: (filters: any) => void;
   redirectionUrls: { label: string; value: string }[];
   activeTab: string;
+  brands: Brand[];
 }
 
 const NotificationsFilters = ({
@@ -21,6 +23,7 @@ const NotificationsFilters = ({
   setTempFilters,
   redirectionUrls,
   activeTab,
+  brands,
 }: NotificationsFiltersProps) => {
   return (
     <div className="flex-1 py-6 space-y-6 overflow-y-auto">
@@ -64,7 +67,7 @@ const NotificationsFilters = ({
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="all">All</SelectItem>
-                  {redirectionUrls?.map((url) => (
+                  {redirectionUrls?.slice(0, 3)?.map((url) => (
                     <SelectItem key={url.value} value={url.value}>
                       {url.label}
                     </SelectItem>
@@ -177,6 +180,29 @@ const NotificationsFilters = ({
         </>
       )}
 
+      <div className="space-y-2">
+        <Label htmlFor="brand_id">Brand</Label>
+        <Select
+          value={tempFilters?.brand_id?.toString() || 'all'}
+          onValueChange={(value) =>
+            setTempFilters({ ...tempFilters, brand_id: value })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Filter by brand" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">All</SelectItem>
+              {brands?.map((brand) => (
+                <SelectItem key={brand?.id} value={brand?.id?.toString()}>
+                  {brand.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
       <div className="space-y-2">
         <Label htmlFor="created_at">Creation Date</Label>
         <Input

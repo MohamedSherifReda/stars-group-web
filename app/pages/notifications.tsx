@@ -48,6 +48,7 @@ import {
 import NotificationsFilters from '@features/notification/components/NotificationsFilters';
 import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 import { notificationsApi } from '@features/notification/notification.apis';
+import brands from './brands';
 
 export const meta = serveNotificationsMeta;
 
@@ -103,6 +104,7 @@ export default function Notifications() {
         'link',
         'is_read',
         'created_at',
+        'brand_id',
       ];
       Object.entries(appliedFilters).forEach(([key, value]) => {
         if (
@@ -120,6 +122,11 @@ export default function Notifications() {
             filters[key] = {
               $val: value === 'true',
               $op: 'Is',
+            };
+          } else if (key === 'brand_id') {
+            filters[key] = {
+              $val: value,
+              $op: 'Eq',
             };
           } else {
             filters[key] = {
@@ -167,6 +174,7 @@ export default function Notifications() {
         'processed_count',
         'failed_count',
         'created_at',
+        'brand_id',
       ];
       Object.entries(appliedFilters).forEach(([key, value]) => {
         if (
@@ -181,7 +189,11 @@ export default function Notifications() {
 
               $op: 'Eq',
             };
-          } else if (key === 'processed_count' || key === 'failed_count') {
+          } else if (
+            key === 'processed_count' ||
+            key === 'failed_count' ||
+            key === 'brand_id'
+          ) {
             filters[key] = {
               $val: parseInt(value as string, 10),
               $op: 'Eq',
@@ -362,6 +374,7 @@ export default function Notifications() {
   };
 
   const handleApplyFilters = () => {
+    console.log('all applied temp filters', tempFilters);
     setAppliedFilters(tempFilters);
     setCurrentPage(1);
     setIsFilterSidebarOpen(false);
@@ -651,6 +664,7 @@ export default function Notifications() {
             setTempFilters={setTempFilters}
             redirectionUrls={redirectionUrls}
             activeTab={activeTab}
+            brands={allBrands}
           />
 
           <SheetFooter className="border-t pt-4 flex-row gap-2 mt-auto">
