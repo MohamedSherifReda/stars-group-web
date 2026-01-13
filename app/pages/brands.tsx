@@ -127,6 +127,11 @@ export default function Brands({ meta }: { meta: any }) {
                 : urlValue,
               $op: 'Contains',
             };
+          } else if (key === 'language') {
+            filters[key] = {
+              $val: value,
+              $op: 'Eq',
+            };
           } else {
             filters[key] = {
               $val: value,
@@ -640,6 +645,18 @@ export default function Brands({ meta }: { meta: any }) {
   }, [brands?.data]);
 
   const handleApplyFilters = () => {
+    if (tempFilters?.name && !tempFilters?.language) {
+      toast.error('Language is required to search by name!', {
+        position: 'bottom-left',
+      });
+      return;
+    }
+    if (tempFilters?.description && !tempFilters?.language) {
+      toast.error('Language is required to search by description!', {
+        position: 'bottom-left',
+      });
+      return;
+    }
     setAppliedFilters(tempFilters);
     setCurrentPage(1);
     setIsFilterSidebarOpen(false);
