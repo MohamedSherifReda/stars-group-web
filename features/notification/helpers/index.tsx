@@ -20,6 +20,7 @@ export async function getAllExportedToExcelNotifications(
       'link',
       'is_read',
       'created_at',
+      'brand_id',
     ];
     Object.entries(appliedFilters).forEach(([key, value]) => {
       if (
@@ -37,6 +38,11 @@ export async function getAllExportedToExcelNotifications(
           filters[key] = {
             $val: value === 'true',
             $op: 'Is',
+          };
+        } else if (key === 'brand_id') {
+          filters[key] = {
+            $val: parseInt(value as string, 10),
+            $op: 'Eq',
           };
         } else {
           filters[key] = {

@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@ui/common/select';
 import type { Brand } from 'core/types/brand.types';
+import { useState } from 'react';
 
 interface NotificationsFiltersProps {
   tempFilters: any;
@@ -25,6 +26,7 @@ const NotificationsFilters = ({
   activeTab,
   brands,
 }: NotificationsFiltersProps) => {
+  const [showBrandsFilter, setShowBrandsFilter] = useState(false);
   return (
     <div className="flex-1 py-6 space-y-6 overflow-y-auto">
       <div className="space-y-2">
@@ -57,9 +59,21 @@ const NotificationsFilters = ({
             <Label htmlFor="link">Link</Label>
             <Select
               value={tempFilters.link || 'all'}
-              onValueChange={(value) =>
-                setTempFilters({ ...tempFilters, link: value })
-              }
+              onValueChange={(value) => {
+                if (value === '/brand/id') {
+                  setShowBrandsFilter(true);
+                  setTempFilters({
+                    ...tempFilters,
+                    link: '/brand',
+                  });
+                } else {
+                  setShowBrandsFilter(false);
+                  setTempFilters({
+                    ...tempFilters,
+                    link: value,
+                  });
+                }
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by link" />
@@ -67,7 +81,7 @@ const NotificationsFilters = ({
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="all">All</SelectItem>
-                  {redirectionUrls?.slice(0, 3)?.map((url) => (
+                  {redirectionUrls?.map((url) => (
                     <SelectItem key={url.value} value={url.value}>
                       {url.label}
                     </SelectItem>
@@ -76,7 +90,33 @@ const NotificationsFilters = ({
               </SelectContent>
             </Select>
           </div>
-
+          {/* brands filter */}
+          {showBrandsFilter && (
+            <div className="space-y-2">
+              <Label htmlFor="brand_id">Brand</Label>
+              <Select
+                value={tempFilters?.brand_id?.toString() || 'all'}
+                onValueChange={(value) =>
+                  setTempFilters({ ...tempFilters, brand_id: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">All</SelectItem>
+                    {brands?.map((brand) => (
+                      <SelectItem key={brand?.id} value={brand?.id?.toString()}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {/* Read status filter */}
           <div className="space-y-2">
             <Label htmlFor="is_read">Read Status</Label>
             <Select
@@ -180,29 +220,6 @@ const NotificationsFilters = ({
         </>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="brand_id">Brand</Label>
-        <Select
-          value={tempFilters?.brand_id?.toString() || 'all'}
-          onValueChange={(value) =>
-            setTempFilters({ ...tempFilters, brand_id: value })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="all">All</SelectItem>
-              {brands?.map((brand) => (
-                <SelectItem key={brand?.id} value={brand?.id?.toString()}>
-                  {brand.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
       <div className="space-y-2">
         <Label htmlFor="created_at">Creation Date</Label>
         <Input

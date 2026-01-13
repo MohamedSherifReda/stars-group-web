@@ -48,7 +48,7 @@ import {
 import NotificationsFilters from '@features/notification/components/NotificationsFilters';
 import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 import { notificationsApi } from '@features/notification/notification.apis';
-import brands from './brands';
+
 
 export const meta = serveNotificationsMeta;
 
@@ -374,7 +374,6 @@ export default function Notifications() {
   };
 
   const handleApplyFilters = () => {
-    console.log('all applied temp filters', tempFilters);
     setAppliedFilters(tempFilters);
     setCurrentPage(1);
     setIsFilterSidebarOpen(false);
