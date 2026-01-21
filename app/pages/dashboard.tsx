@@ -31,14 +31,21 @@ export default function Dashboard() {
     queryFn: () => brandsApi.getBrands().then((res) => res.data),
   });
 
+  console.log('brands in the dashboard', brands);
   const {
     data: banners = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isBannersLoading,
   } = useQuery({
     queryKey: ['banners'],
-    queryFn: () => bannersApi.getBanners().then((res) => res.data),
+    queryFn: () =>
+      bannersApi
+        .getBanners({
+          includeAllBranded: true,
+        })
+        .then((res) => res.data),
   });
 
+  console.log('banners in the dashboard', banners);
   const stats = [
     {
       title: 'Total Users',
@@ -99,93 +106,7 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Activity && system stats... */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Latest system activities and updates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-blue-600" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    New user registered
-                  </p>
-                  <p className="text-sm text-gray-500">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <Tag className="w-4 h-4 text-green-600" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    Brand updated
-                  </p>
-                  <p className="text-sm text-gray-500">4 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Image className="w-4 h-4 text-purple-600" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    New banner created
-                  </p>
-                  <p className="text-sm text-gray-500">6 hours ago</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>System Status</CardTitle>
-            <CardDescription>
-              Current system health and performance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">API Status</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-green-600">Operational</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Database</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-green-600">Connected</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Storage</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <span className="text-sm text-yellow-600">75% Used</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card> */}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
     </div>
   );
 }
