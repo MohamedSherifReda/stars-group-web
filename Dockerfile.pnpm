@@ -1,9 +1,10 @@
 # Step 1: Dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
-RUN npm i -g pnpm
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install
+RUN npm i -g pnpm@10
+# pnpm-workspace.yaml carries the security overrides; the lockfile must match it
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # Step 2: Build
 FROM deps AS build
@@ -15,9 +16,9 @@ RUN pnpm build
 # Step 3: Production image
 FROM node:20-alpine AS prod
 WORKDIR /app
-RUN npm i -g pnpm
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod
+RUN npm i -g pnpm@10
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy the build folder instead of dist
 COPY --from=build /app/build /app/build
