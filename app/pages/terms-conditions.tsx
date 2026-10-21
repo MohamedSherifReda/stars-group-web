@@ -6,6 +6,7 @@ import { Button } from '@ui/common/button';
 import { Skeleton } from '@ui/common/skeleton';
 import TextEditor from '@ui/common/TextEditor';
 import DateFormatter from '@utils/dateFormatter';
+import { sanitizeRichText } from '@utils/sanitizeHtml';
 import { queryClient } from '@utils/queryClient';
 import type { Terms } from 'core/types/terms.types';
 import { useAuthStore } from 'infrastructure/store/auth';
@@ -100,7 +101,7 @@ const TermsAndConditions = () => {
                 </div>
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: terms?.data?.data[0]?.terms as string,
+                    __html: sanitizeRichText(terms?.data?.data[0]?.terms),
                   }}
                 />
               </Suspense>

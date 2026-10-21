@@ -1,5 +1,6 @@
 import { brandsApi } from '@features/brand/brand.apis';
 import { mediaApi } from '@features/media/media.apis';
+import { safeHref } from '@utils/sanitizeHtml';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Asterisk from '@ui/common/Asterisk';
 import { Button } from '@ui/common/button';
@@ -529,9 +530,10 @@ export default function Brands({ meta }: { meta: any }) {
       header: 'Shop URL',
       cell: ({ row }) => {
         const brand = row.original;
-        return brand.shop_url ? (
+        const shopUrl = safeHref(brand.shop_url);
+        return shopUrl ? (
           <a
-            href={brand.shop_url}
+            href={shopUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline"

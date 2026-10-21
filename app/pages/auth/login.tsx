@@ -38,13 +38,9 @@ export default function Login() {
     onSuccess: async (response) => {
       const { access_token, desquare_token, complete_phone_number_required } =
         response.data.data;
+      // The signin response set the httpOnly auth cookie, which this request sends
       const userResponse = await api.get<User>(
-        '/users/profile?relations[profile_image]=true',
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
-        }
+        '/users/profile?relations[profile_image]=true'
       );
       setAuth(userResponse.data, access_token);
       toast.success('Login successful');

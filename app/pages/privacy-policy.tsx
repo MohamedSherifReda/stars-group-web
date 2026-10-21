@@ -5,6 +5,7 @@ import { Button } from '@ui/common/button';
 import { Skeleton } from '@ui/common/skeleton';
 import TextEditor from '@ui/common/TextEditor';
 import DateFormatter from '@utils/dateFormatter';
+import { sanitizeRichText } from '@utils/sanitizeHtml';
 import { queryClient } from '@utils/queryClient';
 import type { Terms } from 'core/types/terms.types';
 import { useAuthStore } from 'infrastructure/store/auth';
@@ -51,7 +52,6 @@ const PrivacyPolicy = () => {
     return <Skeleton className="w-full h-full" />;
   }
 
-  console.log(privacyPolicy?.data[0]);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="">
@@ -107,7 +107,7 @@ const PrivacyPolicy = () => {
                     <div>
                       <div
                         dangerouslySetInnerHTML={{
-                          __html: privacyPolicy?.data[0]?.policy as string,
+                          __html: sanitizeRichText(privacyPolicy?.data[0]?.policy),
                         }}
                       />
                     </div>

@@ -13,19 +13,12 @@ const createApi = (): AxiosInstance => {
   const instance = axios.create({
     baseURL,
     timeout: 60000, // 30 second timeout
+    // Auth is an httpOnly cookie set by the API; the x-cms-client header tells the API to accept it
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
-      // Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}`,
+      'x-cms-client': '1',
     },
-  });
-
-  instance.interceptors.request.use((config) => {
-    if (isServer) return config;
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
   });
 
   // Request interceptor

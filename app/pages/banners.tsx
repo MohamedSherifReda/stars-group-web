@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { safeHref } from '@utils/sanitizeHtml';
 import {
   Plus,
   Edit,
@@ -368,7 +369,7 @@ export default function Banners() {
       accessorKey: 'redirect_url',
       header: 'Redirect URL',
       cell: ({ row }) => {
-        const url = row.original.redirect_url;
+        const url = safeHref(row.original.redirect_url);
         return url ? (
           <a
             href={url}
