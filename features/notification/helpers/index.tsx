@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { Notification, ScheduledNotification } from "core/types/notification.types";
 import { notificationsApi } from "../notification.apis";
 
-const MAX_EXPORTED_RECORDS_COUNT = 1000000;
+import { fetchAllForExport, exportTruncatedMessage } from "@utils/exportPaging";
 
 export async function getAllExportedToExcelNotifications(
   appliedFilters: any,
@@ -53,23 +53,30 @@ export async function getAllExportedToExcelNotifications(
       }
     });
 
-    const exportedNotifications = await notificationsApi.getNotifications({
-      relations: {
-        user: true,
-      },
-      orders: {
-        created_at: 'desc',
-      },
-      pagination: {
-        take: MAX_EXPORTED_RECORDS_COUNT,
-      },
-      filters: filters,
-    });
-
-    const exportedNotificationsArr = exportedNotifications?.data?.data || [];
-    exportedDataSetter(exportedNotificationsArr);
+    const { rows, truncated } = await fetchAllForExport<Notification>((pagination) =>
+      notificationsApi
+        .getNotifications({
+          relations: {
+            user: true,
+          },
+          orders: {
+            created_at: 'desc',
+          },
+          pagination,
+          filters: filters,
+        })
+        .then((res) => res.data)
+    );
+    if (truncated) toast(exportTruncatedMessage);
+    // Only keep what the export needs from the nested user (never tokens / device data)
+    exportedDataSetter(
+      rows.map((n) => {
+        const { user, ...rest } = n;
+        return user ? { ...rest, user: { id: user.id, name: user.name } as typeof user } : rest;
+      })
+    );
   } catch (error) {
-    console.error(error);
+    if (import.meta.env.DEV) console.error('notifications export failed', (error as Error)?.message);
     toast.error('Failed to export notifications. Please try again later!');
   } finally {
     loaderSetter(false);
@@ -120,20 +127,21 @@ export async function getAllExportedToExcelScheduledNotifications(
         }
       });
 
-    const exportedData = await notificationsApi.getScheduledNotifications({
-      orders: {
-        created_at: 'desc',
-      },
-      pagination: {
-        take: MAX_EXPORTED_RECORDS_COUNT,
-      },
-      filters: filters,
-    });
-
-    const exportedDataArr = exportedData?.data?.data || [];
-    exportedDataSetter(exportedDataArr);
+    const { rows, truncated } = await fetchAllForExport<ScheduledNotification>((pagination) =>
+      notificationsApi
+        .getScheduledNotifications({
+          orders: {
+            created_at: 'desc',
+          },
+          pagination,
+          filters: filters,
+        })
+        .then((res) => res.data)
+    );
+    if (truncated) toast(exportTruncatedMessage);
+    exportedDataSetter(rows);
   } catch (error) {
-    console.error(error);
+    if (import.meta.env.DEV) console.error('notifications export failed', (error as Error)?.message);
     toast.error('Failed to export scheduled notifications. Please try again later!');
   } finally {
     loaderSetter(false);

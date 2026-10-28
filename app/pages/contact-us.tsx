@@ -4,6 +4,8 @@ import { Edit, Mail, Phone, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { contactUsApi } from '@features/contact-us/contact-us.apis';
 import PhoneInput, { isValidPhoneNumber, parsePhoneNumber } from 'react-phone-number-input';
+// Bundled flag icons: the default ones load from a third-party host that the CSP (rightly) blocks
+import flags from 'react-phone-number-input/flags';
 import 'react-phone-number-input/style.css';
 import '~/styles/phone-input.css';
 import {
@@ -177,6 +179,7 @@ export default function ContactUs() {
                 {isEditing ? (
                   <PhoneInput
                     international
+                    flags={flags}
                     defaultCountry="US"
                     value={phoneNumber}
                     onChange={(value) => setPhoneNumber(value || '')}

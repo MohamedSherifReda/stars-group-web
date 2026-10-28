@@ -1,6 +1,6 @@
 import { useAuthStore } from 'infrastructure/store/auth';
-import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router';
 import { Sidebar } from './Sidebar';
 import PrivacyPolicy from '~/pages/privacy-policy';
 import TermsAndConditions from '~/pages/terms-conditions';
@@ -25,35 +25,34 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, initializeAuth, token, checkTokenValidity, logout } =
-    useAuthStore();
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  useEffect(() => {
-    initializeAuth();
-    setLoading(false);
-  }, []);
+const SESSION_RECHECK_MS = 30_000;
 
+const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { user, role, status, initializeAuth, checkTokenValidity, clearSession, logout } =
+    useAuthStore();
   const currentRoute = useLocation().pathname;
 
-  // if token is expired or does not exist, log the user out and redirect to login page
+  // Ask the server who we are (user + role) on mount
   useEffect(() => {
-    const isTokenValid = checkTokenValidity();
-    if (
-      !isTokenValid &&
-      currentRoute !== '/auth/login' &&
-      currentRoute !== '/auth/register' &&
-      currentRoute !== '/auth/forgot-password' &&
-      currentRoute !== '/privacy-policy' &&
-      currentRoute !== '/terms-and-conditions'
-    ) {
-      logout();
-      navigate('/auth/login');
-    }
+    initializeAuth();
   }, []);
 
-  if (loading) {
+  // Re-check session expiry after mount: periodically, on tab focus and on route change
+  useEffect(() => {
+    if (!user) return;
+    const check = () => {
+      if (!checkTokenValidity()) clearSession(true);
+    };
+    check();
+    const timer = window.setInterval(check, SESSION_RECHECK_MS);
+    document.addEventListener('visibilitychange', check);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, [user, currentRoute]);
+
+  if (status !== 'ready') {
     return (
       <main className="flex h-screen items-center justify-center bg-gray-50">
         Loading...
@@ -62,6 +61,17 @@ const ProtectedRoutes: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (user && isProtectedRoute(currentRoute)) {
+    // The CMS is admin-only; the API enforces this too. Never render admin UI for other roles.
+    if (role !== 'admin') {
+      return (
+        <main className="flex h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+          <p>You are not authorized to use the CMS.</p>
+          <button className="underline" onClick={logout}>
+            Sign out
+          </button>
+        </main>
+      );
+    }
     return (
       <div className="min-h-screen bg-gray-50">
         <Sidebar />

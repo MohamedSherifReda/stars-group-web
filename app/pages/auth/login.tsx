@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Navigate, Link } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
+import { queryClient } from '@utils/queryClient';
 import toast from 'react-hot-toast';
 import { authApi } from '@features/auth/auth.apis';
 import { useAuthStore } from 'infrastructure/store/auth';
@@ -36,17 +37,40 @@ export default function Login() {
       password: string;
     }) => authApi.login(identifier, password),
     onSuccess: async (response) => {
-      const { access_token, desquare_token, complete_phone_number_required } =
-        response.data.data;
-      // The signin response set the httpOnly auth cookie, which this request sends
-      const userResponse = await api.get<User>(
-        '/users/profile?relations[profile_image]=true'
-      );
-      setAuth(userResponse.data, access_token);
-      toast.success('Login successful');
+      const { access_token } = response.data.data;
+      try {
+        // The signin response set the httpOnly auth cookie, which this request sends.
+        // The role comes from the server, never from the token or storage.
+        const userResponse = await api.get<User>(
+          '/users/profile?relations[profile_image]=true',
+          { suppressError: true } as any
+        );
+        if (userResponse.data?.role !== 'admin') {
+          await api
+            .post('/auth/signout', undefined, { suppressError: true } as any)
+            .catch(() => {});
+          toast.error('Invalid credentials');
+          return;
+        }
+        // Nothing from a previous session may be shown to this user
+        queryClient.clear();
+        setAuth(userResponse.data, access_token);
+        toast.success('Login successful');
+      } catch {
+        toast.error('Login failed');
+      }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Login failed');
+      // Generic messages only: never echo server wording that reveals whether an account exists
+      const status = error?.response?.status;
+      if (status === 429) toast.error('Too many attempts, please try again later');
+      else if (status && status < 500) toast.error('Invalid credentials');
+      else toast.error('Login failed, please try again');
+    },
+    onSettled: () => {
+      // Drop the password and access token from the mutation cache
+      queryClient.getMutationCache().clear();
+      setFormData((prev) => ({ ...prev, password: '' }));
     },
   });
 

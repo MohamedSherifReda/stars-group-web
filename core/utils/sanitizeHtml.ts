@@ -10,8 +10,29 @@ export function sanitizeRichText(html: string | null | undefined): string {
   return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 }
 
-/** Returns the URL only when it is a plain http(s)/mailto/tel link, so it is safe as an href. */
+const parseUrl = (url: string): URL | null => {
+  try {
+    return new URL(url.trim());
+  } catch {
+    return null;
+  }
+};
+
+/** Returns the URL only when it parses and is http(s)/mailto/tel, so it is safe as an href. */
 export function safeHref(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
-  return /^\s*(https?:|mailto:|tel:)/i.test(url) ? url : undefined;
+  const parsed = parseUrl(url);
+  if (!parsed) return undefined;
+  return ['http:', 'https:', 'mailto:', 'tel:'].includes(parsed.protocol)
+    ? parsed.href
+    : undefined;
+}
+
+/** Returns the URL only when it parses and is http(s). For <img src>, Excel cells and links to files. */
+export function safeHttpUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  const parsed = parseUrl(url);
+  return parsed && (parsed.protocol === 'http:' || parsed.protocol === 'https:')
+    ? parsed.href
+    : undefined;
 }

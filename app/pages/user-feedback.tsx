@@ -31,7 +31,8 @@ const UserFeedback = () => {
     }
   })
   const onSubmit = (data: FeedbackFormData) => {
-    console.log("form data",data)
+    // TODO: submit to the API; form contents must not be logged
+    void data;
   }
   return (
     <section className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">

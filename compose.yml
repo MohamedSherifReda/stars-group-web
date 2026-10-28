@@ -5,9 +5,13 @@ services:
       context: .
       dockerfile: Dockerfile.pnpm
       args:
-        CACHE_BUST: ${CACHE_BUST:-$(date +%s)}
-    env_file: ".env"
+        CACHE_BUST: ${CACHE_BUST:-0}
+        # Compiled into the client bundle at build time. Compose reads these from the host
+        # shell / the host's compose .env for interpolation only; .env is NOT copied into the
+        # image (see .dockerignore) and NOT passed to the container (no env_file).
+        VITE_BASE_URL: ${VITE_BASE_URL:?VITE_BASE_URL must be set}
+        # TinyMCE Cloud key: public by design (restrict approved domains in the Tiny dashboard)
+        VITE_TINY_API_KEY: ${VITE_TINY_API_KEY:-}
     restart: unless-stopped
     ports:
       - 8284:5000
-

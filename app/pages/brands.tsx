@@ -1,6 +1,6 @@
 import { brandsApi } from '@features/brand/brand.apis';
 import { mediaApi } from '@features/media/media.apis';
-import { safeHref } from '@utils/sanitizeHtml';
+import { safeHref, safeHttpUrl } from '@utils/sanitizeHtml';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Asterisk from '@ui/common/Asterisk';
 import { Button } from '@ui/common/button';
@@ -22,6 +22,7 @@ import {
 } from '@ui/common/dialog';
 import { Input } from '@ui/common/input';
 import { FileInput } from '@ui/common/file-input';
+import { ALLOWED_IMAGE_ACCEPT } from '@utils/fileValidation';
 import { Label } from '@ui/common/label';
 import { Textarea } from '@ui/common/textarea';
 import { DataTable, type ColumnDef } from '@ui/common/data-table';
@@ -462,7 +463,7 @@ export default function Brands({ meta }: { meta: any }) {
         const brand = row.original;
         return brand.logo?.url ? (
           <img
-            src={brand.logo.url + brand.logo?.key}
+            src={safeHttpUrl(brand.logo.url + brand.logo?.key)}
             crossOrigin="anonymous"
             alt={brand.name}
             className="w-10 h-10 object-cover rounded"
@@ -884,7 +885,7 @@ export default function Brands({ meta }: { meta: any }) {
                     </Label>
                     <FileInput
                       id="logo"
-                      accept="image/*"
+                      accept={ALLOWED_IMAGE_ACCEPT}
                       placeholder="Select a logo image"
                       onChange={(file) => setLogoFile(file)}
                     />
@@ -898,7 +899,7 @@ export default function Brands({ meta }: { meta: any }) {
                     </Label>
                     <FileInput
                       id="product_picture"
-                      accept="image/*"
+                      accept={ALLOWED_IMAGE_ACCEPT}
                       placeholder="Select a product picture"
                       onChange={(file) => setProductFile(file)}
                     />
@@ -912,7 +913,7 @@ export default function Brands({ meta }: { meta: any }) {
                     </Label>
                     <FileInput
                       id="logo_background"
-                      accept="image/*"
+                      accept={ALLOWED_IMAGE_ACCEPT}
                       placeholder="Select a logo background image"
                       onChange={(file) => setLogoBackgroundFile(file)}
                     />
@@ -1206,7 +1207,7 @@ export default function Brands({ meta }: { meta: any }) {
                 <Label htmlFor="edit_logo">Logo (optional)</Label>
                 <FileInput
                   id="edit_logo"
-                  accept="image/*"
+                  accept={ALLOWED_IMAGE_ACCEPT}
                   placeholder={
                     editingBrand?.logo?.key?.replace('/assets/', '') ||
                     logoFile?.name ||
@@ -1216,7 +1217,7 @@ export default function Brands({ meta }: { meta: any }) {
                 />
                 {editingBrand && editingBrand?.logo?.url && (
                   <img
-                    src={editingBrand.logo.url + editingBrand.logo?.key}
+                    src={safeHttpUrl(editingBrand.logo.url + editingBrand.logo?.key)}
                     crossOrigin="anonymous"
                     alt={editingBrand.name}
                     className="w-full h-20 object-contain rounded border mt-2"
@@ -1233,7 +1234,7 @@ export default function Brands({ meta }: { meta: any }) {
                 </Label>
                 <FileInput
                   id="edit_product_picture"
-                  accept="image/*"
+                  accept={ALLOWED_IMAGE_ACCEPT}
                   placeholder={
                     editingBrand?.product_picture?.key?.replace(
                       '/assets/',
@@ -1246,10 +1247,7 @@ export default function Brands({ meta }: { meta: any }) {
                 />
                 {editingBrand && editingBrand?.product_picture?.url && (
                   <img
-                    src={
-                      editingBrand.product_picture.url +
-                      editingBrand.product_picture?.key
-                    }
+                    src={safeHttpUrl(editingBrand.product_picture.url + editingBrand.product_picture?.key)}
                     crossOrigin="anonymous"
                     alt={editingBrand.name}
                     className="w-full h-20 object-contain rounded border mt-2"
@@ -1266,7 +1264,7 @@ export default function Brands({ meta }: { meta: any }) {
                 </Label>
                 <FileInput
                   id="logo_background"
-                  accept="image/*"
+                  accept={ALLOWED_IMAGE_ACCEPT}
                   placeholder={
                     editingBrand?.background_logo?.key?.replace(
                       '/assets/',
@@ -1279,10 +1277,7 @@ export default function Brands({ meta }: { meta: any }) {
                 />
                 {editingBrand && editingBrand?.background_logo?.url && (
                   <img
-                    src={
-                      editingBrand.background_logo.url +
-                      editingBrand.background_logo?.key
-                    }
+                    src={safeHttpUrl(editingBrand.background_logo.url + editingBrand.background_logo?.key)}
                     crossOrigin="anonymous"
                     alt={editingBrand.name}
                     className="w-full h-20 object-contain rounded border mt-2"

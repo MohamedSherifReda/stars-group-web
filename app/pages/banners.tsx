@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { safeHref } from '@utils/sanitizeHtml';
+import { safeHref, safeHttpUrl } from '@utils/sanitizeHtml';
 import {
   Plus,
   Edit,
@@ -48,6 +48,7 @@ import {
 } from '@ui/common/select';
 import { Toggle } from '~/components/ui/toggle';
 import { FileInput } from '@ui/common/file-input';
+import { ALLOWED_IMAGE_ACCEPT } from '@utils/fileValidation';
 import {
   Sheet,
   SheetContent,
@@ -331,7 +332,7 @@ export default function Banners() {
             {banner.image_en?.url ? (
               <img
                 crossOrigin="anonymous"
-                src={banner.image_en.url + banner.image_en.key}
+                src={safeHttpUrl(banner.image_en.url + banner.image_en.key)}
                 alt={`${banner.promotion_name} (EN)`}
                 className="w-16 h-10 object-cover rounded border"
                 title="English"
@@ -344,7 +345,7 @@ export default function Banners() {
             {banner.image_ar?.url ? (
               <img
                 crossOrigin="anonymous"
-                src={banner.image_ar.url + banner.image_ar.key}
+                src={safeHttpUrl(banner.image_ar.url + banner.image_ar.key)}
                 alt={`${banner.promotion_name} (AR)`}
                 className="w-16 h-10 object-cover rounded border"
                 title="Arabic"
@@ -604,7 +605,7 @@ export default function Banners() {
                       </Label>
                       <FileInput
                         id="image_en"
-                        accept="image/*"
+                        accept={ALLOWED_IMAGE_ACCEPT}
                         placeholder="Select a banner image"
                         onChange={(file) => setImageEnFile(file)}
                       />
@@ -620,7 +621,7 @@ export default function Banners() {
                       </Label>
                       <FileInput
                         id="image_ar"
-                        accept="image/*"
+                        accept={ALLOWED_IMAGE_ACCEPT}
                         placeholder="Select a banner image"
                         onChange={(file) => setImageArFile(file)}
                       />
@@ -815,7 +816,7 @@ export default function Banners() {
                   </Label>
                   <FileInput
                     id="edit_image_en"
-                    accept="image/*"
+                    accept={ALLOWED_IMAGE_ACCEPT}
                     placeholder={
                       editingBanner?.image_en?.key?.replace('/assets/', '') ||
                       imageEnFile?.name ||
@@ -827,9 +828,7 @@ export default function Banners() {
                 {editingBanner?.image_en?.url && (
                   <img
                     crossOrigin="anonymous"
-                    src={
-                      editingBanner.image_en.url + editingBanner.image_en.key
-                    }
+                    src={safeHttpUrl(editingBanner.image_en.url + editingBanner.image_en.key)}
                     alt="Current English"
                     className="w-full h-20 object-cover rounded border"
                   />
@@ -845,7 +844,7 @@ export default function Banners() {
                   </Label>
                   <FileInput
                     id="edit_image_ar"
-                    accept="image/*"
+                    accept={ALLOWED_IMAGE_ACCEPT}
                     placeholder={
                       editingBanner?.image_ar?.key?.replace('/assets/', '') ||
                       imageArFile?.name ||
@@ -857,9 +856,7 @@ export default function Banners() {
                 {editingBanner?.image_ar?.url && (
                   <img
                     crossOrigin="anonymous"
-                    src={
-                      editingBanner.image_ar.url + editingBanner.image_ar.key
-                    }
+                    src={safeHttpUrl(editingBanner.image_ar.url + editingBanner.image_ar.key)}
                     alt="Current Arabic"
                     className="w-full h-20 object-cover rounded border"
                   />

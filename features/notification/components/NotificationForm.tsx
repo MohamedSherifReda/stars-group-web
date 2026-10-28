@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@utils/cn';
+import { safeHttpUrl } from '@utils/sanitizeHtml';
 
 import { Button } from '@ui/common/button';
 import { Label } from '@ui/common/label';
@@ -21,7 +22,27 @@ import { UsersDropdown, ALL_USERS_VALUE, RANK_SILVER, RANK_GOLD, RANK_PLATINUM }
 import type { Brand } from 'core/types/brand.types';
 import type { CreateNotificationPayload, BroadCastNotificationPayload } from 'core/types/notification.types';
 
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog';
+
 import { redirectionUrls } from '../constants';
+
+const RANK_NAMES: Record<number, string> = { 1: 'Silver', 2: 'Gold', 3: 'Platinum' };
+
+interface PendingSend {
+  payload: CreateNotificationPayload | BroadCastNotificationPayload;
+  isBroadcast: boolean;
+  /** Human readable audience, shown in the confirmation */
+  audience: string;
+  /** What the admin has to type to confirm */
+  phrase: string;
+}
 
 const notificationSchema = z
   .object({
@@ -38,7 +59,18 @@ const notificationSchema = z
       .min(1, 'Message cannot be blank')
       .max(500, 'Message must be less than 500 characters'),
     users: z.array(z.string()).min(1, 'Please select at least one user'),
-    link: z.string().optional(),
+    link: z
+      .string()
+      .optional()
+      .refine(
+        (value) => {
+          if (!value) return true;
+          // in-app route, or an absolute http(s) URL; nothing else (no javascript:, data:, //host)
+          if (value.startsWith('/') && !value.startsWith('//')) return true;
+          return safeHttpUrl(value) !== undefined;
+        },
+        { message: 'Link must be an in-app path or an http(s) URL' }
+      ),
     scheduled_at: z
       .string()
       .optional()
@@ -111,6 +143,8 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
     },
   });
 
+  const [pending, setPending] = useState<PendingSend | null>(null);
+  const [confirmText, setConfirmText] = useState('');
   const notificationLinkValue = watch('link');
   const selectedUsers = watch('users') || [];
 
@@ -131,7 +165,14 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
           schedule_at: data.scheduled_at,
         }),
       };
-      onSubmit(broadcastData, true);
+      // Sending to every user is irreversible: require explicit confirmation
+      setConfirmText('');
+      setPending({
+        payload: broadcastData,
+        isBroadcast: true,
+        audience: 'ALL USERS',
+        phrase: 'ALL USERS',
+      });
     } else {
       const selectedIds = data.users;
       const ranks: number[] = [];
@@ -162,6 +203,18 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
         ...(ranks.length ? { ranks: ranks } : {}),
       };
 
+      if (ranks.length > 0) {
+        // Rank audiences can be thousands of users: require explicit confirmation
+        const names = ranks.map((r) => RANK_NAMES[r]).join(', ');
+        setConfirmText('');
+        setPending({
+          payload: notificationData,
+          isBroadcast: false,
+          audience: `every ${names} member${ranks.length > 1 ? 's' : ''}${hasUsers ? ` plus ${userIds.length} selected user(s)` : ''}`,
+          phrase: 'SEND',
+        });
+        return;
+      }
       onSubmit(notificationData, false);
     }
   };
@@ -419,6 +472,50 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
           )}
         </div>
       </div>
+
+      <AlertDialog
+        open={!!pending}
+        onOpenChange={(open) => {
+          if (!open) setPending(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm bulk notification</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send &ldquo;{pending && 'title' in pending.payload ? pending.payload.title : ''}&rdquo; to{' '}
+              <strong>{pending?.audience}</strong>
+              {pending && 'schedule_at' in pending.payload && pending.payload.schedule_at
+                ? ' at the scheduled time'
+                : ' immediately'}
+              . It cannot be undone. Type <strong>{pending?.phrase}</strong> to confirm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            aria-label="Confirmation text"
+            autoComplete="off"
+          />
+          <AlertDialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPending(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isSubmitting || confirmText.trim() !== pending?.phrase}
+              onClick={() => {
+                if (!pending) return;
+                const { payload, isBroadcast } = pending;
+                setPending(null);
+                onSubmit(payload, isBroadcast);
+              }}
+            >
+              Send to {pending?.phrase === 'SEND' ? 'selected ranks' : 'all users'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>

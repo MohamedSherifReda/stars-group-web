@@ -28,6 +28,7 @@ import UsersFilters from '@features/user/components/UsersFilters';
 import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 import { usersCols } from '@features/user/UserCols';
 import type { User } from 'core/types/user.types';
+import { useIsAdmin } from 'infrastructure/store/auth';
 
 import { getAllExportedToExcelUsers } from '@features/user/helpers';
 
@@ -43,6 +44,8 @@ export default function Users() {
   const [isLoadingExportedUsers, setIsLoadingExportedUsers] = useState(false);
   const [exportedUsers, setExportedUsers] = useState<User[]>([]);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  // Destructive UI only for a server-confirmed admin (the API enforces this too)
+  const isAdmin = useIsAdmin();
   const {
     data: users = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isUsersLoading,
@@ -97,7 +100,8 @@ export default function Users() {
 
   const deleteUserMutation = useMutation({
     mutationKey: ['delete-user'],
-    mutationFn: (id: number) => usersApi.deleteUser(id),
+    mutationFn: ({ id, password }: { id: number; password: string }) =>
+      usersApi.deleteUser(id, password),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('User deleted successfully');
@@ -109,8 +113,13 @@ export default function Users() {
       );
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete user');
+      toast.error(
+        error.response?.status === 403 || error.response?.status === 401
+          ? 'Incorrect password or not authorized'
+          : error.response?.data?.message || 'Failed to delete user'
+      );
     },
+    onSettled: () => queryClient.getMutationCache().clear(),
   });
 
   const usersRows = users?.data || [];
@@ -132,7 +141,7 @@ export default function Users() {
   const usersColsArr = useMemo(() => {
     const freshCols = [...usersCols];
     // if the delete col is already present then return the cols
-    if (!freshCols.some((col) => col.id === 'delete')) {
+    if (isAdmin && !freshCols.some((col) => col.id === 'delete')) {
       freshCols.push({
         id: 'delete',
         header: 'Actions',
@@ -142,8 +151,9 @@ export default function Users() {
             <DeleteItemAlert
               isDeleting={deleteUserMutation.isPending}
               itemName={user.name || 'User'}
-              onDelete={() => {
-                deleteUserMutation.mutate(user.id);
+              requirePassword
+              onDelete={(password) => {
+                deleteUserMutation.mutate({ id: user.id, password: password ?? '' });
               }}
               isOpen={deleteUserId === user.id}
               setIsOpen={(isOpen) => setDeleteUserId(isOpen ? user.id : null)}
@@ -164,7 +174,7 @@ export default function Users() {
       });
     }
     return freshCols;
-  }, [deleteUserId, deleteUserMutation.isPending, setDeleteUserId]);
+  }, [deleteUserId, deleteUserMutation.isPending, setDeleteUserId, isAdmin]);
 
   const handleApplyFilters = () => {
     setAppliedFilters(tempFilters);

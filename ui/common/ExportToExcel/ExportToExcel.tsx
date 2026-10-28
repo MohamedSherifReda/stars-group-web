@@ -5,6 +5,34 @@ import { Button } from '../button';
 import { UserRank } from 'core/types/user.types';
 import { formatDate } from 'date-fns';
 import { Download } from 'lucide-react';
+import { safeHttpUrl } from '@utils/sanitizeHtml';
+
+// Columns that must never end up in a spreadsheet, whatever the API returns
+const SECRET_COLUMN_PATTERN =
+  /token|fcm|password|passwd|refresh|de_?square|secret|otp|session|ui_configurations/i;
+
+// users.xlsx contains only these columns (everything else is dropped)
+const USER_EXPORT_COLUMNS = [
+  'id',
+  'name',
+  'email',
+  'phone_number_key',
+  'phone_number',
+  'account_verified',
+  'role',
+  'rank',
+  'birthdate',
+  'created_at',
+];
+
+/** Neutralises spreadsheet formula injection: cells starting with = + - @ tab or CR become text. */
+const FORMULA_START = /^[=+\-@\t\r]/;
+const guardCell = (value: unknown): unknown =>
+  typeof value === 'string' && FORMULA_START.test(value) ? `'${value}` : value;
+
+/** Joins a media base url + key and keeps it only when it is a real http(s) URL. */
+const mediaUrl = (media: any): string =>
+  (media?.url && safeHttpUrl(String(media.url) + String(media.key ?? ''))) || 'N/A';
 
 interface ExportToExcelProps {
   data: any[];
@@ -37,8 +65,12 @@ const ExportToExcel = ({
       }
 
       if (fileName?.includes('users')) {
+        const picked: Record<string, any> = {};
+        USER_EXPORT_COLUMNS.forEach((col) => {
+          if (col in updatedRow) picked[col] = updatedRow[col];
+        });
         return {
-          ...updatedRow,
+          ...picked,
           rank: UserRank[updatedRow.rank] || 'N/A',
           birthdate: updatedRow?.birthdate
             ? formatDate(updatedRow?.birthdate, 'dd-MMM-yyyy')
@@ -68,18 +100,16 @@ const ExportToExcel = ({
             updatedRow?.brand_id_brand_translations?.length > 0
               ? updatedRow?.brand_id_brand_translations[0]?.heading_title
               : 'N/A',
-          shop_url: updatedRow?.shop_url || 'N/A',
+          shop_url: safeHttpUrl(updatedRow?.shop_url) || 'N/A',
 
           display_order: updatedRow?.display_order || 'N/A',
           banner:
             updatedRow?.banners?.length > 0
               ? updatedRow?.banners[0]?.promotion_name
               : 'N/A',
-          logo: updatedRow?.logo?.url + updatedRow?.logo?.key,
-          product_picture:
-            updatedRow?.product_picture?.url + updatedRow?.product_picture?.key,
-          background_logo:
-            updatedRow?.background_logo?.url + updatedRow?.background_logo?.key,
+          logo: mediaUrl(updatedRow?.logo),
+          product_picture: mediaUrl(updatedRow?.product_picture),
+          background_logo: mediaUrl(updatedRow?.background_logo),
         };
       }
 
@@ -87,15 +117,11 @@ const ExportToExcel = ({
         return {
           id: updatedRow?.id || 'N/A',
           promotion_name: updatedRow?.promotion_name || 'N/A',
-          redirect_url: updatedRow?.redirect_url || 'N/A',
+          redirect_url: safeHttpUrl(updatedRow?.redirect_url) || 'N/A',
           brand: updatedRow?.brand?.name || 'Home Page',
           visibility: updatedRow?.disabled ? 'Disabled' : 'Active',
-          image_en: updatedRow?.image_en
-            ? updatedRow.image_en?.url + updatedRow.image_en?.key
-            : 'N/A',
-          image_ar: updatedRow?.image_ar
-            ? updatedRow.image_ar?.url + updatedRow.image_ar?.key
-            : 'N/A',
+          image_en: mediaUrl(updatedRow?.image_en),
+          image_ar: mediaUrl(updatedRow?.image_ar),
         };
       }
 
@@ -131,6 +157,14 @@ const ExportToExcel = ({
       }
 
       return updatedRow;
+    }).map((row) => {
+      // Final pass for every export: drop secret-looking columns and neutralise formulas
+      const safeRow: Record<string, any> = {};
+      Object.entries(row).forEach(([key, value]) => {
+        if (SECRET_COLUMN_PATTERN.test(key)) return;
+        safeRow[key] = guardCell(value);
+      });
+      return safeRow;
     });
 
     // Convert JSON → worksheet
@@ -149,7 +183,7 @@ const ExportToExcel = ({
 
     // --- ADDED: Control Column Widths ---
     if (updatedData.length > 0) {
-      const colWidths = Object.keys(updatedData[0]).map((key) => {
+      const colWidths = Object.keys(updatedData[0]!).map((key) => {
         // Calculate the maximum length in each column
         const maxColumnLength = updatedData.reduce((max, row) => {
           const cellValue = row[key] ? String(row[key]) : '';

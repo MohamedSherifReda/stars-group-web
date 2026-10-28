@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Toggle } from '~/components/ui/toggle';
 import { Button } from '@ui/common/button';
@@ -8,12 +8,11 @@ import { Skeleton } from '@ui/common/skeleton';
 import { settingsApi } from '@features/settings/settings.apis';
 import type { FeedbackUIConfigUpdatePayload } from '@features/settings/settings.apis';
 import toast from 'react-hot-toast';
-import { useAuthStore } from 'infrastructure/store/auth';
+import { useIsAdmin } from 'infrastructure/store/auth';
 
 const FeedbackVisibilityControl: React.FC = () => {
   const queryClient = useQueryClient();
-  const { getUserRole } = useAuthStore();
-  const isAdmin = useMemo(() => getUserRole() === 'admin', [getUserRole]);
+  const isAdmin = useIsAdmin();
 
   const [chatVisible, setChatVisible] = useState(false);
   const [homeVisible, setHomeVisible] = useState(false);

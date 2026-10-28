@@ -4,22 +4,22 @@ import { usePathname } from '@hooks/usePathname';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@ui/common/button';
 import { Skeleton } from '@ui/common/skeleton';
-import TextEditor from '@ui/common/TextEditor';
+import TextEditor, { getBoundedEditorContent } from '@ui/common/TextEditor';
 import DateFormatter from '@utils/dateFormatter';
 import { sanitizeRichText } from '@utils/sanitizeHtml';
 import { queryClient } from '@utils/queryClient';
 import type { Terms } from 'core/types/terms.types';
-import { useAuthStore } from 'infrastructure/store/auth';
+import { useIsAdmin } from 'infrastructure/store/auth';
 import { Edit, Save } from 'lucide-react';
 import { Suspense, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 
 const TermsAndConditions = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const { getUserRole } = useAuthStore();
   const pathName = usePathname();
 
-  const isAdmin = getUserRole() === 'admin';
+  // Role comes from the server profile, not from storage
+  const isAdmin = useIsAdmin();
   const editorRef = useRef(null);
   const { data: terms, isLoading: isLoadingTerms } = useQuery({
     queryKey: ['terms'],
@@ -41,8 +41,10 @@ const TermsAndConditions = () => {
   });
   function onSaveHandler() {
     if (editorRef.current) {
+      const html = getBoundedEditorContent(editorRef.current);
+      if (html === null) return;
       updateTermsMutation.mutate({
-        terms: (editorRef.current as any).getContent() as string,
+        terms: html,
         policy: terms?.data?.data[0]?.policy || ' ',
       });
     }

@@ -11,9 +11,11 @@ dist
 .vite
 .react-router
 
-# Environment files (allow .env but block local/secrets)
-.env.local
-.env.*.local
+# Environment files: never part of the build context (VITE_* values are passed as build args)
+.env
+.env.*
+!.env.example
+package-lock.json
 
 # Git
 .git

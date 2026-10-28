@@ -3,22 +3,22 @@ import { usePathname } from '@hooks/usePathname';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@ui/common/button';
 import { Skeleton } from '@ui/common/skeleton';
-import TextEditor from '@ui/common/TextEditor';
+import TextEditor, { getBoundedEditorContent } from '@ui/common/TextEditor';
 import DateFormatter from '@utils/dateFormatter';
 import { sanitizeRichText } from '@utils/sanitizeHtml';
 import { queryClient } from '@utils/queryClient';
 import type { Terms } from 'core/types/terms.types';
-import { useAuthStore } from 'infrastructure/store/auth';
+import { useIsAdmin } from 'infrastructure/store/auth';
 import { Edit, Save } from 'lucide-react';
 import React, { Suspense, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 
 const PrivacyPolicy = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const { getUserRole } = useAuthStore();
   const pathName = usePathname();
   const editorRef = useRef(null);
-  const isAdmin = getUserRole() === 'admin';
+  // Role comes from the server profile, not from storage
+  const isAdmin = useIsAdmin();
   const { data: privacyPolicy, isLoading: isLoadingPrivacyPolicy } = useQuery({
     queryKey: ['privacyPolicy'],
     queryFn: () =>
@@ -42,8 +42,10 @@ const PrivacyPolicy = () => {
 
   function onSaveHandler() {
     if (editorRef.current) {
+      const html = getBoundedEditorContent(editorRef.current);
+      if (html === null) return;
       updatePrivacyPolicyMutation.mutate({
-        policy: (editorRef.current as any).getContent() as string,
+        policy: html,
         terms: privacyPolicy?.data[0]?.terms || ' ',
       });
     }

@@ -19,33 +19,39 @@ export default function Dashboard() {
     data: usersData = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isUsersLoading,
   } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => usersApi.getUsers().then((res) => res.data),
+    // Only the count is needed: ask for one row and read meta.total
+    queryKey: ['users', 'count'],
+    queryFn: () =>
+      usersApi
+        .getUsers({ pagination: { skip: 0, take: 1 } })
+        .then((res) => res.data),
   });
 
   const {
     data: brands = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isBrandsLoading,
   } = useQuery({
-    queryKey: ['brands'],
-    queryFn: () => brandsApi.getBrands().then((res) => res.data),
+    queryKey: ['brands', 'count'],
+    queryFn: () =>
+      brandsApi
+        .getBrands({ pagination: { skip: 0, take: 1 } })
+        .then((res) => res.data),
   });
 
-  console.log('brands in the dashboard', brands);
   const {
     data: banners = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isBannersLoading,
   } = useQuery({
-    queryKey: ['banners'],
+    queryKey: ['banners', 'count'],
     queryFn: () =>
       bannersApi
         .getBanners({
           includeAllBranded: true,
+          pagination: { skip: 0, take: 1 },
         })
         .then((res) => res.data),
   });
 
-  console.log('banners in the dashboard', banners);
   const stats = [
     {
       title: 'Total Users',

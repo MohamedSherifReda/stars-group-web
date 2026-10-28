@@ -2,7 +2,7 @@ import { brandsApi } from "../brand.apis";
 import toast from "react-hot-toast";
 import type { Dispatch, SetStateAction } from "react";
 
-const MAX_EXPORTED_RECORDS_COUNT = 1000000;
+import { fetchAllForExport, exportTruncatedMessage } from "@utils/exportPaging";
 
 export async function getAllExportedToExcelBrands(
   brandsFilters: any,
@@ -38,11 +38,10 @@ export async function getAllExportedToExcelBrands(
       }
     });
 
-    const exportedToExcelBrands = await brandsApi.getBrands(
+    const { rows: exportedBrands, truncated } = await fetchAllForExport((pagination) =>
+      brandsApi.getBrands(
       {
-        pagination: {
-          take: MAX_EXPORTED_RECORDS_COUNT,
-        },
+        pagination,
         relations: {
           logo: true,
           product_picture: true,
@@ -57,12 +56,11 @@ export async function getAllExportedToExcelBrands(
       {
         'x-skip-translations': true,
       }
-    );
-
-    const exportedBrands = exportedToExcelBrands?.data?.data || [];
+    ).then((res) => res.data));
+    if (truncated) toast(exportTruncatedMessage);
     exportedBrandsSetter(exportedBrands);
   } catch (error) {
-    console.error(error);
+    if (import.meta.env.DEV) console.error('brands export failed', (error as Error)?.message);
     toast.error('Failed to export brands. Please try again later!');
   } finally {
     loaderSetter(false);

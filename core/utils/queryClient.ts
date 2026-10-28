@@ -6,5 +6,10 @@ export const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 1,
     },
+    mutations: {
+      // Do not keep mutation variables/results (passwords, OTPs, reset tokens, access tokens)
+      // in the MutationCache once nothing observes them.
+      gcTime: 0,
+    },
   },
 });

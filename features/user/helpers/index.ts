@@ -2,7 +2,7 @@ import toast from "react-hot-toast";
 import { usersApi } from "../user.apis";
 import type { Dispatch, SetStateAction } from "react";
 
-const MAX_EXPORTED_RECORDS_COUNT = 1000000;
+import { fetchAllForExport, exportTruncatedMessage } from "@utils/exportPaging";
 
 export async function getAllExportedToExcelUsers(
   usersFilters: any,
@@ -43,17 +43,13 @@ export async function getAllExportedToExcelUsers(
       }
     });
 
-    const exportedToExcelUsers = await usersApi.getUsers({
-      pagination: {
-        take: MAX_EXPORTED_RECORDS_COUNT,
-      },
-      filters: filters,
-    });
-
-    const exportedUsersArr = exportedToExcelUsers?.data?.data || [];
-    exportedUsersSetter(exportedUsersArr);
+    const { rows, truncated } = await fetchAllForExport((pagination) =>
+      usersApi.getUsers({ pagination, filters }).then((res) => res.data)
+    );
+    if (truncated) toast(exportTruncatedMessage);
+    exportedUsersSetter(rows);
   } catch (error) {
-    console.error(error);
+    if (import.meta.env.DEV) console.error('users export failed', (error as Error)?.message);
     toast.error('Failed to export users. Please try again later!');
   } finally {
     loaderSetter(false);

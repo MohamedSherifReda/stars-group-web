@@ -32,7 +32,9 @@ import {
 import { DataTable, type ColumnDef } from '@ui/common/data-table';
 import serveOnboardingImagesMeta from '~/meta/serveOnboardingImagesMeta';
 import Asterisk from '@ui/common/Asterisk';
+import { safeHttpUrl } from '@utils/sanitizeHtml';
 import { FileInput } from '@ui/common/file-input';
+import { ALLOWED_IMAGE_ACCEPT } from '@utils/fileValidation';
 
 export const meta = serveOnboardingImagesMeta;
 
@@ -164,7 +166,7 @@ export default function OnboardingImages() {
         return image?.url ? (
           <img
             crossOrigin="anonymous"
-            src={image.url + image.key}
+            src={safeHttpUrl(image.url + image.key)}
             alt={`Onboarding Image ${row.original.id}`}
             className="w-24 h-16 object-cover rounded border"
           />
@@ -253,7 +255,7 @@ export default function OnboardingImages() {
                 </Label>
                 <FileInput
                   id="image"
-                  accept="image/*"
+                  accept={ALLOWED_IMAGE_ACCEPT}
                   placeholder="Select an image"
                   onChange={(file) => setImageFile(file)}
                 />
@@ -337,14 +339,14 @@ export default function OnboardingImages() {
               <Label htmlFor="edit_image">Image</Label>
               <FileInput
                 id="edit_image"
-                accept="image/*"
+                accept={ALLOWED_IMAGE_ACCEPT}
                 placeholder={editingImage?.image?.key?.split('/').pop() || "Select an image"}
                 onChange={(file) => setImageFile(file)}
               />
               {editingImage?.image?.url && !imageFile && (
                 <img
                   crossOrigin="anonymous"
-                  src={editingImage.image.url + editingImage.image.key}
+                  src={safeHttpUrl(editingImage.image.url + editingImage.image.key)}
                   alt="Current"
                   className="mt-2 w-full h-32 object-cover rounded border"
                 />

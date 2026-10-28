@@ -32,7 +32,9 @@ export const handleError = (
 
   // Log error to console in development
   if (logError && import.meta.env.DEV) {
-    console.error('[Error Handler]:', error);
+    // Log only safe fields: Axios errors carry request bodies (config.data) with passwords/OTPs
+    const e = error as any;
+    console.error('[Error Handler]:', e?.config?.method, e?.config?.url, e?.response?.status ?? e?.message);
   }
 
   // Handle Axios errors

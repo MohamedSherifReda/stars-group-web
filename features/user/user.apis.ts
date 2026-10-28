@@ -11,5 +11,7 @@ export const usersApi = {
   },
   getUser: (id: number) => api.get<User>(`/users/${id}`),
 
-  deleteUser: (id: number) => api.delete(`/users/${id}`),
+  // Hard-deleting another user requires the admin's own password (step-up)
+  deleteUser: (id: number, current_password: string) =>
+    api.delete(`/users/${id}`, { data: { current_password } }),
 };

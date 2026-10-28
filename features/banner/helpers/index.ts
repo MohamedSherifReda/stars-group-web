@@ -3,7 +3,7 @@ import { bannersApi } from "../banner.apis";
 import toast from "react-hot-toast";
 
 
-const MAX_EXPORTED_RECORDS_COUNT = 1000000;
+import { fetchAllForExport, exportTruncatedMessage } from "@utils/exportPaging";
 
 export async function getAllExportedToExcelBanners(
   appliedFilters: any,
@@ -40,23 +40,24 @@ export async function getAllExportedToExcelBanners(
       }
     });
 
-    const exportedToExcelBanners = await bannersApi.getBanners({
-      relations: {
-        image_ar: true,
-        image_en: true,
-        brand: true,
-      },
-      includeAllBranded: true,
-      pagination: {
-        take: MAX_EXPORTED_RECORDS_COUNT,
-      },
-      filters: filters,
-    });
-
-    const exportedBannersArr = exportedToExcelBanners?.data?.data || [];
-    exportedBannersSetter(exportedBannersArr);
+    const { rows, truncated } = await fetchAllForExport((pagination) =>
+      bannersApi
+        .getBanners({
+          relations: {
+            image_ar: true,
+            image_en: true,
+            brand: true,
+          },
+          includeAllBranded: true,
+          pagination,
+          filters: filters,
+        })
+        .then((res) => res.data)
+    );
+    if (truncated) toast(exportTruncatedMessage);
+    exportedBannersSetter(rows);
   } catch (error) {
-    console.error(error);
+    if (import.meta.env.DEV) console.error('banners export failed', (error as Error)?.message);
     toast.error('Failed to export banners. Please try again later!');
   } finally {
     loaderSetter(false);

@@ -3,3 +3,5 @@
 node_modules
 build
 .react-router
+package-lock.json
+

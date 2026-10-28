@@ -10,7 +10,12 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 ARG CACHE_BUST
-RUN echo "Cache bust: ${CACHE_BUST:-$(date +%s)}"
+ARG VITE_BASE_URL
+ARG VITE_TINY_API_KEY
+# The build fails (vite.config.ts) when VITE_BASE_URL is empty
+ENV VITE_BASE_URL=$VITE_BASE_URL \
+    VITE_TINY_API_KEY=$VITE_TINY_API_KEY
+RUN echo "Cache bust: ${CACHE_BUST:-0}"
 RUN pnpm build
 
 # Step 3: Production image

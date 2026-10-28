@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
+import { queryClient } from '@utils/queryClient';
+import { useAuthStore } from 'infrastructure/store/auth';
 import toast from 'react-hot-toast';
 import { authApi } from '@features/auth/auth.apis';
 import {
@@ -12,6 +14,7 @@ import {
 } from '@ui/common/card';
 import { Input } from '@ui/common/input';
 import { Button } from '@ui/common/button';
+import api from '@utils/api';
 import serveForgetPasswordMeta from '~/meta/serveForgetPasswordMeta';
 
 export const meta = serveForgetPasswordMeta;
@@ -23,49 +26,84 @@ export default function ForgotPassword() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOTP] = useState('');
-  const navigate = useNavigate();
+  // Held in component state only (never storage); cleared on success and on going back
+  const [resetToken, setResetToken] = useState('');
   const requestResetMutation = useMutation({
     mutationFn: (identifier: string) => authApi.forgetPassword(identifier),
     onSuccess: () => {
       setStep('verify_otp');
-      toast.success('Reset code sent to your email/phone');
+      // Same message whether or not the account exists
+      toast.success('If the account exists, a reset code has been sent');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to send reset code');
+      // Do not reveal whether the identifier exists: behave the same except for throttling
+      if (error?.response?.status === 429) {
+        toast.error('Too many attempts, please try again later');
+      } else if (!error?.response || error.response.status >= 500) {
+        toast.error('Something went wrong, please try again');
+      } else {
+        setStep('verify_otp');
+        toast.success('If the account exists, a reset code has been sent');
+      }
     },
+    onSettled: () => queryClient.getMutationCache().clear(),
   });
 
   const verifyOTP_IdentifierMutation = useMutation({
     mutationFn: ({ identifier, otp }: { identifier: string; otp: string }) => {
       return authApi.verifyOTP_Identifier(identifier, otp);
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      const token: string | undefined =
+        response.data?.data?.reset_token ?? response.data?.reset_token;
+      if (!token) {
+        toast.error('Failed to verify OTP');
+        return;
+      }
+      setResetToken(token);
+      setOTP('');
       toast.success('OTP verified successfully');
       setStep('reset');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to verify OTP');
+    onError: () => {
+      toast.error('Invalid or expired code');
     },
+    onSettled: () => queryClient.getMutationCache().clear(),
   });
 
   const completeResetMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       identifier,
       password,
+      resetToken,
     }: {
       identifier: string;
       password: string;
-    }) => authApi.completeForgetPassword(identifier, password),
+      resetToken: string;
+    }) => {
+      // Drop any existing session and cached data before the reset
+      const auth = useAuthStore.getState();
+      if (auth.isAuthenticated) {
+        await api
+          .post('/auth/signout', undefined, { suppressError: true } as any)
+          .catch(() => {});
+      }
+      auth.clearSession(true);
+      return authApi.completeForgetPassword(identifier, password, resetToken);
+    },
     onSuccess: () => {
-      toast.success('Password reset successfully');
+      toast.success('Password reset successfully, please log in');
       setStep('request');
       setIdentifier('');
       setPassword('');
-      navigate('/auth/login');
+      setResetToken('');
+      // Full navigation to a fresh login page (no in-memory state carried over)
+      window.location.assign('/auth/login');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to reset password');
+    onError: () => {
+      toast.error('Failed to reset password. The code may have expired.');
     },
+    onSettled: () => queryClient.getMutationCache().clear(),
   });
 
   const handleRequestReset = (e: React.FormEvent) => {
@@ -83,7 +121,7 @@ export default function ForgotPassword() {
       toast.error('Please enter your new password');
       return;
     }
-    completeResetMutation.mutate({ identifier, password });
+    completeResetMutation.mutate({ identifier, password, resetToken });
   };
 
   const handleVerifyOTP = (e: React.FormEvent) => {
@@ -203,7 +241,11 @@ export default function ForgotPassword() {
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={() => setStep('request')}
+                onClick={() => {
+                  setResetToken('');
+                  setPassword('');
+                  setStep('request');
+                }}
               >
                 Back
               </Button>

@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { cn } from '@utils/cn';
 import { Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { validateImageFile } from '@utils/fileValidation';
 
 export interface FileInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
@@ -31,8 +33,20 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
       []
     );
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0] || null;
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.target;
+      const file = input.files?.[0] || null;
+      // Image inputs: validate type, size and magic bytes before the file is accepted
+      if (file && accept?.includes('image')) {
+        const error = await validateImageFile(file);
+        if (error) {
+          toast.error(error);
+          input.value = '';
+          setFileName('');
+          onChange?.(null);
+          return;
+        }
+      }
       setFileName(file ? file.name : '');
       onChange?.(file);
     };

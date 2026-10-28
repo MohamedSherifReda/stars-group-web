@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Login and deploy
+        # TODO: pin to a full commit SHA (`uses: appleboy/ssh-action@<40-char-sha> # v1.0.3`); not known offline
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -28,5 +29,7 @@ jobs:
             git fetch --all --prune;
             git pull --force origin staging;
             git clean -fd;
+            # compose reads VITE_BASE_URL / VITE_TINY_API_KEY from the host shell or its compose .env
+            # (interpolation only; .env is excluded from the image by .dockerignore)
             docker compose build --no-cache;
             docker compose up -d --remove-orphans;
