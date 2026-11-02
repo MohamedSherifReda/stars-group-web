@@ -107,6 +107,18 @@ export function DataTable<TData>({
     ? Math.ceil(pagination.totalItems / pagination.pageSize)
     : 1;
 
+  // After deleting the last row of the last page (or a filter shrinking the list) the current
+  // page can be past the end: move to the last page that still has rows
+  const currentPageIndex = pagination?.pageIndex;
+  const currentPageSize = pagination?.pageSize;
+  React.useEffect(() => {
+    if (!onPaginationChange || currentPageIndex === undefined || isLoading) return;
+    const lastPage = Math.max(1, totalPages);
+    if (currentPageIndex > lastPage) {
+      onPaginationChange(lastPage, currentPageSize ?? 10);
+    }
+  }, [currentPageIndex, currentPageSize, totalPages, isLoading, onPaginationChange]);
+
   const handlePreviousPage = () => {
     if (pagination && onPaginationChange && pagination.pageIndex > 1) {
       onPaginationChange(pagination.pageIndex - 1, pagination.pageSize);

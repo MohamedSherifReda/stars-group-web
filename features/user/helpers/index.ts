@@ -6,11 +6,11 @@ import { fetchAllForExport, exportTruncatedMessage } from "@utils/exportPaging";
 
 export async function getAllExportedToExcelUsers(
   usersFilters: any,
-  loaderSetter: Dispatch<SetStateAction<boolean>>,
-  exportedUsersSetter: Dispatch<SetStateAction<any>>
-) {
+  loaderSetter?: Dispatch<SetStateAction<boolean>>,
+  exportedUsersSetter?: Dispatch<SetStateAction<any>>
+): Promise<any[] | null> {
   try {
-    loaderSetter(true);
+    loaderSetter?.(true);
     const filters: any = {};
     Object.entries(usersFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== '' && value !== 'all') {
@@ -47,11 +47,13 @@ export async function getAllExportedToExcelUsers(
       usersApi.getUsers({ pagination, filters }).then((res) => res.data)
     );
     if (truncated) toast(exportTruncatedMessage);
-    exportedUsersSetter(rows);
+    exportedUsersSetter?.(rows);
+    return rows;
   } catch (error) {
     if (import.meta.env.DEV) console.error('users export failed', (error as Error)?.message);
     toast.error('Failed to export users. Please try again later!');
+    return null;
   } finally {
-    loaderSetter(false);
+    loaderSetter?.(false);
   }
 }

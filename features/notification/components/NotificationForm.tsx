@@ -35,6 +35,14 @@ import { redirectionUrls } from '../constants';
 
 const RANK_NAMES: Record<number, string> = { 1: 'Silver', 2: 'Gold', 3: 'Platinum' };
 
+/** Parses a typed hour/minute; returns null for non-numbers and clamps to 0..max. */
+const parseTimePart = (raw: string, max: number): number | null => {
+  if (raw.trim() === '') return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return null;
+  return Math.min(max, Math.max(0, Math.trunc(value)));
+};
+
 interface PendingSend {
   payload: CreateNotificationPayload | BroadCastNotificationPayload;
   isBroadcast: boolean;
@@ -205,12 +213,15 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
 
       if (ranks.length > 0) {
         // Rank audiences can be thousands of users: require explicit confirmation
-        const names = ranks.map((r) => RANK_NAMES[r]).join(', ');
+        // The backend sends to the INTERSECTION of selected users and ranks, not the union
+        const names = ranks.map((r) => RANK_NAMES[r]).join(' or ');
         setConfirmText('');
         setPending({
           payload: notificationData,
           isBroadcast: false,
-          audience: `every ${names} member${ranks.length > 1 ? 's' : ''}${hasUsers ? ` plus ${userIds.length} selected user(s)` : ''}`,
+          audience: hasUsers
+            ? `only the ${userIds.length} selected user${userIds.length !== 1 ? 's' : ''} who ${userIds.length !== 1 ? 'are' : 'is a'} ${names} member${userIds.length !== 1 ? 's' : ''}`
+            : `every ${names} member`,
           phrase: 'SEND',
         });
         return;
@@ -412,7 +423,8 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                               : ''
                           }
                           onChange={(e) => {
-                            const hours = parseInt(e.target.value) || 0;
+                            const hours = parseTimePart(e.target.value, 23);
+                            if (hours === null) return;
                             const date = field.value
                               ? new Date(field.value)
                               : new Date();
@@ -436,7 +448,8 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                               : ''
                           }
                           onChange={(e) => {
-                            const minutes = parseInt(e.target.value) || 0;
+                            const minutes = parseTimePart(e.target.value, 59);
+                            if (minutes === null) return;
                             const date = field.value
                               ? new Date(field.value)
                               : new Date();
@@ -511,7 +524,12 @@ const NotificationForm: React.FC<NotificationFormProps> = ({
                 onSubmit(payload, isBroadcast);
               }}
             >
-              Send to {pending?.phrase === 'SEND' ? 'selected ranks' : 'all users'}
+              Send to{' '}
+              {pending?.isBroadcast
+                ? 'all users'
+                : pending && 'users' in pending.payload && pending.payload.users?.length
+                ? 'matching users'
+                : 'selected ranks'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

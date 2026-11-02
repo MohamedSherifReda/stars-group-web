@@ -1,6 +1,6 @@
 # Legacy entry point: identical to Dockerfile.pnpm (pnpm only, frozen lockfile, overrides in
 # pnpm-workspace.yaml). Prefer `docker compose build`, which uses Dockerfile.pnpm.
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 RUN npm i -g pnpm@10
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -14,7 +14,7 @@ ENV VITE_BASE_URL=$VITE_BASE_URL \
     VITE_TINY_API_KEY=$VITE_TINY_API_KEY
 RUN pnpm build
 
-FROM node:20-alpine AS prod
+FROM node:22-alpine AS prod
 WORKDIR /app
 RUN npm i -g pnpm@10
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

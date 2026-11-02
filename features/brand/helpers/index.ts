@@ -6,11 +6,11 @@ import { fetchAllForExport, exportTruncatedMessage } from "@utils/exportPaging";
 
 export async function getAllExportedToExcelBrands(
   brandsFilters: any,
-  loaderSetter: Dispatch<SetStateAction<boolean>>,
-  exportedBrandsSetter: Dispatch<SetStateAction<any>>
-) {
+  loaderSetter?: Dispatch<SetStateAction<boolean>>,
+  exportedBrandsSetter?: Dispatch<SetStateAction<any>>
+): Promise<any[] | null> {
   try {
-    loaderSetter(true);
+    loaderSetter?.(true);
 
     const filters: any = {};
 
@@ -58,11 +58,13 @@ export async function getAllExportedToExcelBrands(
       }
     ).then((res) => res.data));
     if (truncated) toast(exportTruncatedMessage);
-    exportedBrandsSetter(exportedBrands);
+    exportedBrandsSetter?.(exportedBrands);
+    return exportedBrands;
   } catch (error) {
     if (import.meta.env.DEV) console.error('brands export failed', (error as Error)?.message);
     toast.error('Failed to export brands. Please try again later!');
+    return null;
   } finally {
-    loaderSetter(false);
+    loaderSetter?.(false);
   }
 }

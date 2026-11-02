@@ -86,6 +86,11 @@ export const UsersDropdown = <T extends FieldValues>({
   const [open, setOpen] = useState(false);
   const [inputTerm, setInputTerm] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  // Labels of selected users (id -> label), kept independently of the loaded page so the
+  // chips survive searching / closing the dropdown (the ids are still sent)
+  const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>(
+    {}
+  );
 
   // Debounce search term
   useEffect(() => {
@@ -278,7 +283,11 @@ export const UsersDropdown = <T extends FieldValues>({
             : [];
           const isAllUsersSelected = selectedIds.includes(ALL_USERS_VALUE);
 
-          const toggleUser = (userId: string) => {
+          const toggleUser = (userId: string, user?: User) => {
+            if (user && !selectedIds.includes(userId)) {
+              const userLabel = renderUser(user);
+              setSelectedLabels((prev) => ({ ...prev, [userId]: userLabel }));
+            }
             // If toggling "All users"
             if (userId === ALL_USERS_VALUE) {
               const newValue = isAllUsersSelected ? [] : [ALL_USERS_VALUE];
@@ -330,9 +339,18 @@ export const UsersDropdown = <T extends FieldValues>({
             onValueChange?.([]);
           };
 
-          const selectedUsers = allUsers.filter((user) =>
-            selectedIds.includes(user.id.toString())
-          );
+          // Chips come from the selected ids, not from the currently loaded users
+          const selectedUsers = selectedIds
+            .filter((id) => id !== ALL_USERS_VALUE && !RANK_IDS.includes(id))
+            .map((id) => {
+              const loaded = allUsers.find((u) => u.id.toString() === id);
+              return {
+                id,
+                label:
+                  selectedLabels[id] ??
+                  (loaded ? renderUser(loaded) : `User #${id}`),
+              };
+            });
 
           const selectedRanks = RANK_IDS.filter((id) =>
             selectedIds.includes(id)
@@ -381,10 +399,10 @@ export const UsersDropdown = <T extends FieldValues>({
                             key={user.id}
                             className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded px-2 py-0.5 text-xs"
                           >
-                            {renderUser(user)}
+                            {user.label}
                             <X
                               className="h-3 w-3 cursor-pointer hover:text-red-500"
-                              onClick={(e) => removeUser(user.id.toString(), e)}
+                              onClick={(e) => removeUser(user.id, e)}
                             />
                           </span>
                         ))}
@@ -533,7 +551,7 @@ export const UsersDropdown = <T extends FieldValues>({
                                   type="button"
                                   onClick={() =>
                                     !isDisabled &&
-                                    toggleUser(user.id.toString())
+                                    toggleUser(user.id.toString(), user)
                                   }
                                   disabled={isDisabled}
                                   className={cn(

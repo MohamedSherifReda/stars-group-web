@@ -1,7 +1,9 @@
 .env
-.env.local
+.env.*
+!.env.example
+*.pem
+*.key
 node_modules
 build
 .react-router
 package-lock.json
-

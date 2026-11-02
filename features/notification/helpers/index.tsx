@@ -8,11 +8,11 @@ import { fetchAllForExport, exportTruncatedMessage } from "@utils/exportPaging";
 
 export async function getAllExportedToExcelNotifications(
   appliedFilters: any,
-  loaderSetter: Dispatch<SetStateAction<boolean>>,
-  exportedDataSetter: Dispatch<SetStateAction<Notification[]>>
-) {
+  loaderSetter?: Dispatch<SetStateAction<boolean>>,
+  exportedDataSetter?: Dispatch<SetStateAction<Notification[]>>
+): Promise<Notification[] | null> {
   try {
-    loaderSetter(true);
+    loaderSetter?.(true);
     const filters: any = {};
     const notificationsFilters = [
       'title',
@@ -69,26 +69,29 @@ export async function getAllExportedToExcelNotifications(
     );
     if (truncated) toast(exportTruncatedMessage);
     // Only keep what the export needs from the nested user (never tokens / device data)
-    exportedDataSetter(
-      rows.map((n) => {
-        const { user, ...rest } = n;
-        return user ? { ...rest, user: { id: user.id, name: user.name } as typeof user } : rest;
-      })
-    );
+    const safeRows = rows.map((n) => {
+      const { user, ...rest } = n;
+      return user ? { ...rest, user: { id: user.id, name: user.name } as typeof user } : rest;
+    });
+    exportedDataSetter?.(safeRows);
+    return safeRows;
   } catch (error) {
     if (import.meta.env.DEV) console.error('notifications export failed', (error as Error)?.message);
     toast.error('Failed to export notifications. Please try again later!');
+    return null;
   } finally {
-    loaderSetter(false);
+    loaderSetter?.(false);
   }
 }
 
 // scheduled notifications
 export async function getAllExportedToExcelScheduledNotifications(
-  appliedFilters: any, loaderSetter: Dispatch<SetStateAction<boolean>>, exportedDataSetter: Dispatch<SetStateAction<ScheduledNotification[]>>
-) {
+  appliedFilters: any,
+  loaderSetter?: Dispatch<SetStateAction<boolean>>,
+  exportedDataSetter?: Dispatch<SetStateAction<ScheduledNotification[]>>
+): Promise<ScheduledNotification[] | null> {
   try {
-    loaderSetter(true);
+    loaderSetter?.(true);
       const filters: any = {};
       const scheduledFilters = [
         'title',
@@ -139,11 +142,13 @@ export async function getAllExportedToExcelScheduledNotifications(
         .then((res) => res.data)
     );
     if (truncated) toast(exportTruncatedMessage);
-    exportedDataSetter(rows);
+    exportedDataSetter?.(rows);
+    return rows;
   } catch (error) {
     if (import.meta.env.DEV) console.error('notifications export failed', (error as Error)?.message);
     toast.error('Failed to export scheduled notifications. Please try again later!');
+    return null;
   } finally {
-    loaderSetter(false);
+    loaderSetter?.(false);
   }
 }

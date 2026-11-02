@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { safeHref, safeHttpUrl } from '@utils/sanitizeHtml';
 import {
@@ -88,9 +88,6 @@ export default function Banners() {
   const [tempFilters, setTempFilters] = useState<any>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [isLoadingExportedBanners, setIsLoadingExportedBanners] =
-    useState(false);
-  const [exportedBanners, setExportedBanners] = useState<Banner[]>([]);
   const queryClient = useQueryClient();
 
   const excludedBannersColsFromExport = [
@@ -157,8 +154,12 @@ export default function Banners() {
     data: brands = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isBrandsLoading,
   } = useQuery({
-    queryKey: ['brands'],
-    queryFn: () => brandsApi.getBrands().then((res) => res.data),
+    // Ask for every brand: the backend default page (25) would hide the rest from the picker
+    queryKey: ['brands', 'all-options'],
+    queryFn: () =>
+      brandsApi
+        .getBrands({ pagination: { skip: 0, take: 1000 } })
+        .then((res) => res.data),
   });
 
   const uploadMutation = useMutation({
@@ -167,17 +168,11 @@ export default function Banners() {
   // Create banner mutation
   const createMutation = useMutation({
     mutationFn: (banner: Partial<Banner>) => bannersApi.createBanner(banner),
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banners'] });
       setIsCreateOpen(false);
       resetForm();
       toast.success('Banner created successfully');
-      // refresh the exported to excel records
-      await getAllExportedToExcelBanners(
-        appliedFilters,
-        setIsLoadingExportedBanners,
-        setExportedBanners
-      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create banner');
@@ -187,17 +182,11 @@ export default function Banners() {
   const updateMutation = useMutation({
     mutationFn: ({ id, banner }: { id: number; banner: Partial<Banner> }) =>
       bannersApi.updateBanner(id, banner),
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banners'] });
       setEditingBanner(null);
       resetForm();
       toast.success('Banner updated successfully');
-      // refresh the exported to excel records
-      await getAllExportedToExcelBanners(
-        appliedFilters,
-        setIsLoadingExportedBanners,
-        setExportedBanners
-      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update banner');
@@ -206,15 +195,9 @@ export default function Banners() {
   // delete banner mutation.
   const deleteMutation = useMutation({
     mutationFn: (id: number) => bannersApi.deleteBanner(id),
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banners'] });
       toast.success('Banner deleted successfully');
-      // refresh the exported to excel records
-      await getAllExportedToExcelBanners(
-        appliedFilters,
-        setIsLoadingExportedBanners,
-        setExportedBanners
-      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete banner');
@@ -234,10 +217,9 @@ export default function Banners() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    let imageEnId: number | undefined;
+    let imageArId: number | undefined;
     try {
-      let imageEnId: number | undefined;
-      let imageArId: number | undefined;
-
       if (imageEnFile) {
         const imageEnResponse = await uploadMutation.mutateAsync(imageEnFile);
         imageEnId = imageEnResponse.data?.data?.id;
@@ -247,43 +229,54 @@ export default function Banners() {
         const imageArResponse = await uploadMutation.mutateAsync(imageArFile);
         imageArId = imageArResponse.data?.data?.id;
       }
+    } catch (error) {
+      // Keep the form as it is so the admin can retry
+      toast.error('Failed to upload files');
+      return;
+    }
 
+    // Work on a copy: the form state must stay intact if the save fails
+    const payload: BannerFormData = { ...formData };
+
+    try {
       //if the redirect url is empty or falsy value, then delete it as it is already optional. (During Creating only)
-      if (!formData.redirect_url && !editingBanner) {
-        delete formData.redirect_url;
+      if (!payload.redirect_url && !editingBanner) {
+        delete payload.redirect_url;
       }
 
       if (editingBanner) {
         const bannerData = {
-          ...formData,
+          ...payload,
           ...(imageEnId && { image_en_id: imageEnId }),
           ...(imageArId && { image_ar_id: imageArId }),
-          redirect_url: formData?.redirect_url ? formData.redirect_url : null,
-          brand_id: formData?.brand_id
-            ? parseInt(formData.brand_id as string)
+          redirect_url: payload?.redirect_url ? payload.redirect_url : null,
+          brand_id: payload?.brand_id
+            ? parseInt(payload.brand_id as string)
             : null,
         };
-        updateMutation.mutate({ id: editingBanner.id, banner: bannerData });
+        // onSuccess closes the dialog and resets the form; a failure keeps both
+        await updateMutation.mutateAsync({
+          id: editingBanner.id,
+          banner: bannerData,
+        });
       } else {
         // if the brand id is null, then remove it from the payload. (in create mode only).
-        if (formData?.brand_id === null) {
-          delete formData.brand_id;
+        if (payload?.brand_id === null) {
+          delete payload.brand_id;
         }
         const bannerData = {
-          ...formData,
+          ...payload,
           ...(imageEnId && { image_en_id: imageEnId }),
           ...(imageArId && { image_ar_id: imageArId }),
 
-          ...(formData?.brand_id && {
-            brand_id: parseInt(formData.brand_id as string),
+          ...(payload?.brand_id && {
+            brand_id: parseInt(payload.brand_id as string),
           }),
         };
-        createMutation.mutate(bannerData);
+        await createMutation.mutateAsync(bannerData);
       }
-    } catch (error) {
-      toast.error('Failed to upload files');
-    } finally {
-      resetForm();
+    } catch {
+      // The mutation's onError already showed the API message; keep the form contents
     }
   };
 
@@ -447,15 +440,6 @@ export default function Banners() {
     },
   ];
 
-  // loading all of the banners that match the applied filters to prepare them for export to excel...
-  useEffect(() => {
-    getAllExportedToExcelBanners(
-      appliedFilters,
-      setIsLoadingExportedBanners,
-      setExportedBanners
-    );
-  }, [appliedFilters]);
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -491,10 +475,10 @@ export default function Banners() {
           </Button>
 
           <ExportToExcel
-            data={exportedBanners || []}
+            // Rows are loaded only when the admin clicks Export
+            fetchData={() => getAllExportedToExcelBanners(appliedFilters)}
             excludedCols={excludedBannersColsFromExport}
             fileName="banners.xlsx"
-            isFetchingData={isLoadingExportedBanners}
           />
 
           <Dialog

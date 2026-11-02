@@ -1,7 +1,7 @@
-import { termsAPI } from '@features/terms/Terms.api';
+import { TERMS_QUERY_KEY, termsAPI, useTermsRow } from '@features/terms/Terms.api';
 import { usePathname } from '@hooks/usePathname';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Button } from '@ui/common/button';
 import { Skeleton } from '@ui/common/skeleton';
 import TextEditor, { getBoundedEditorContent } from '@ui/common/TextEditor';
@@ -21,17 +21,19 @@ const TermsAndConditions = () => {
   // Role comes from the server profile, not from storage
   const isAdmin = useIsAdmin();
   const editorRef = useRef(null);
-  const { data: terms, isLoading: isLoadingTerms } = useQuery({
-    queryKey: ['terms'],
-    queryFn: () => termsAPI.getTerms(),
-  });
+  const {
+    data: termsRow,
+    isLoading: isLoadingTerms,
+    isFetching: isFetchingTerms,
+    refetch: refetchTerms,
+  } = useTermsRow();
 
   const updateTermsMutation = useMutation({
-    mutationFn: (terms: Terms) => termsAPI.updateTerms(terms),
+    mutationFn: (terms: Pick<Terms, 'terms'>) => termsAPI.updateTerms(terms),
     onSuccess: () => {
       toast.success('Terms and conditions updated successfully');
       setIsEditing(false);
-      queryClient.invalidateQueries({ queryKey: ['terms'] });
+      queryClient.invalidateQueries({ queryKey: TERMS_QUERY_KEY });
     },
     onError: (error: any) => {
       toast.error(
@@ -43,11 +45,19 @@ const TermsAndConditions = () => {
     if (editorRef.current) {
       const html = getBoundedEditorContent(editorRef.current);
       if (html === null) return;
-      updateTermsMutation.mutate({
-        terms: html,
-        policy: terms?.data?.data[0]?.policy || ' ',
-      });
+      // Send only the terms field; the privacy policy is saved by its own page
+      updateTermsMutation.mutate({ terms: html });
     }
+  }
+
+  // Load the latest row before editing so another admin's change isn't overwritten
+  async function startEditing() {
+    const result = await refetchTerms();
+    if (result.isError) {
+      toast.error('Failed to load the latest terms and conditions');
+      return;
+    }
+    setIsEditing(true);
   }
 
   return (
@@ -56,12 +66,15 @@ const TermsAndConditions = () => {
         <div className="flex justify-end mb-4">
           {isAdmin && pathName === '/settings' && (
             <Button
-              disabled={isLoadingTerms || updateTermsMutation.isPending}
+              disabled={
+                isLoadingTerms ||
+                (!isEditing && isFetchingTerms) ||
+                updateTermsMutation.isPending
+              }
               onClick={() => {
                 if (!isEditing) {
-                  setIsEditing(true);
-                }
-                if (isEditing) {
+                  startEditing();
+                } else {
                   onSaveHandler();
                 }
               }}
@@ -83,7 +96,7 @@ const TermsAndConditions = () => {
           <Suspense fallback={<Skeleton className="w-full h-full" />}>
             <TextEditor
               ref={editorRef}
-              initialValue={terms?.data?.data[0]?.terms as string}
+              initialValue={termsRow?.terms as string}
             />
           </Suspense>
         ) : (
@@ -97,13 +110,13 @@ const TermsAndConditions = () => {
                   <p className="text-sm text-gray-500 mb-4">
                     <strong>Last Updated:</strong>{' '}
                     {DateFormatter.formatDate(
-                      terms?.data?.data[0]?.updated_at as string
+                      termsRow?.updated_at as string
                     )}
                   </p>
                 </div>
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: sanitizeRichText(terms?.data?.data[0]?.terms),
+                    __html: sanitizeRichText(termsRow?.terms),
                   }}
                 />
               </Suspense>

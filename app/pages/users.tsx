@@ -41,8 +41,6 @@ export default function Users() {
   const [appliedFilters, setAppliedFilters] = useState<any>({});
   const [tempFilters, setTempFilters] = useState<any>({});
   const [searchValue, setSearchValue] = useState<string>('');
-  const [isLoadingExportedUsers, setIsLoadingExportedUsers] = useState(false);
-  const [exportedUsers, setExportedUsers] = useState<User[]>([]);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   // Destructive UI only for a server-confirmed admin (the API enforces this too)
   const isAdmin = useIsAdmin();
@@ -102,15 +100,10 @@ export default function Users() {
     mutationKey: ['delete-user'],
     mutationFn: ({ id, password }: { id: number; password: string }) =>
       usersApi.deleteUser(id, password),
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('User deleted successfully');
       setDeleteUserId(null);
-      await getAllExportedToExcelUsers(
-        appliedFilters,
-        setIsLoadingExportedUsers,
-        setExportedUsers
-      );
     },
     onError: (error: any) => {
       toast.error(
@@ -210,14 +203,6 @@ export default function Users() {
     setCurrentPage(1);
   };
 
-  // loading all of the users that match the applied filters to prepare them for export to excel...
-  useEffect(() => {
-    getAllExportedToExcelUsers(
-      appliedFilters,
-      setIsLoadingExportedUsers,
-      setExportedUsers
-    );
-  }, [appliedFilters]);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -229,10 +214,10 @@ export default function Users() {
         </div>
         <div className="flex items-center gap-x-2">
           <ExportToExcel
-            data={exportedUsers || []}
+            // Rows are loaded only when the admin clicks Export
+            fetchData={() => getAllExportedToExcelUsers(appliedFilters)}
             excludedCols={excludedUsersColsFromExport}
             fileName="users.xlsx"
-            isFetchingData={isLoadingExportedUsers}
           />
           <Button
             variant="outline"

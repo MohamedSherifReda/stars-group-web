@@ -26,7 +26,13 @@ const NotificationsFilters = ({
   activeTab,
   brands,
 }: NotificationsFiltersProps) => {
-  const [showBrandsFilter, setShowBrandsFilter] = useState(false);
+  // Show the brand select again when a brand filter is already set (the sheet remounts on open)
+  const [showBrandsFilter, setShowBrandsFilter] = useState(
+    () =>
+      !!tempFilters?.brand_id &&
+      tempFilters.brand_id !== 'all' &&
+      tempFilters?.link === '/brand'
+  );
   return (
     <div className="flex-1 py-6 space-y-6 overflow-y-auto">
       <div className="space-y-2">
@@ -68,8 +74,10 @@ const NotificationsFilters = ({
                   });
                 } else {
                   setShowBrandsFilter(false);
+                  // The brand select is hidden now, so its value must not stay applied
+                  const { brand_id: _hiddenBrand, ...rest } = tempFilters;
                   setTempFilters({
-                    ...tempFilters,
+                    ...rest,
                     link: value,
                   });
                 }

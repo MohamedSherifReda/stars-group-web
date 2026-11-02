@@ -7,11 +7,11 @@ import { fetchAllForExport, exportTruncatedMessage } from "@utils/exportPaging";
 
 export async function getAllExportedToExcelBanners(
   appliedFilters: any,
-  loaderSetter: Dispatch<SetStateAction<boolean>>,
-  exportedBannersSetter: Dispatch<SetStateAction<any>>
-) {
+  loaderSetter?: Dispatch<SetStateAction<boolean>>,
+  exportedBannersSetter?: Dispatch<SetStateAction<any>>
+): Promise<any[] | null> {
   try {
-    loaderSetter(true);
+    loaderSetter?.(true);
     const filters: any = {};
     Object.entries(appliedFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== '' && value !== 'all') {
@@ -55,11 +55,13 @@ export async function getAllExportedToExcelBanners(
         .then((res) => res.data)
     );
     if (truncated) toast(exportTruncatedMessage);
-    exportedBannersSetter(rows);
+    exportedBannersSetter?.(rows);
+    return rows;
   } catch (error) {
     if (import.meta.env.DEV) console.error('banners export failed', (error as Error)?.message);
     toast.error('Failed to export banners. Please try again later!');
+    return null;
   } finally {
-    loaderSetter(false);
+    loaderSetter?.(false);
   }
 }

@@ -9,6 +9,7 @@ import { settingsApi } from '@features/settings/settings.apis';
 import type { FeedbackUIConfigUpdatePayload } from '@features/settings/settings.apis';
 import toast from 'react-hot-toast';
 import { useIsAdmin } from 'infrastructure/store/auth';
+import { safeHttpUrl } from '@utils/sanitizeHtml';
 
 const FeedbackVisibilityControl: React.FC = () => {
   const queryClient = useQueryClient();
@@ -35,9 +36,7 @@ const FeedbackVisibilityControl: React.FC = () => {
       setHomeVisible(
         !!configResponse.data.feedback_button_home_visibility?.value
       );
-      if (configResponse.data.feedback_url?.value) {
-        setFeedbackFormUrl(configResponse.data.feedback_url.value);
-      }
+      setFeedbackFormUrl(configResponse.data.feedback_url?.value ?? '');
     }
   }, [configResponse]);
 
@@ -61,10 +60,18 @@ const FeedbackVisibilityControl: React.FC = () => {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const url = feedbackFormUrl.trim();
+    // Empty clears the URL; otherwise it must be an absolute http(s) URL (the app opens it directly)
+    if (url && !safeHttpUrl(url)) {
+      toast.error('Feedback form URL must be an http(s) URL');
+      return;
+    }
+
     const payload: FeedbackUIConfigUpdatePayload = {
       feedback_button_chat_visibility: chatVisible,
       feedback_button_home_visibility: homeVisible,
-      feedback_url: feedbackFormUrl || null,
+      // The API rejects null for a text setting; an empty string clears it
+      feedback_url: url,
     };
 
     updateMutation.mutate(payload);

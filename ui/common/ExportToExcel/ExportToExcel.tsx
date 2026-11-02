@@ -35,21 +35,40 @@ const mediaUrl = (media: any): string =>
   (media?.url && safeHttpUrl(String(media.url) + String(media.key ?? ''))) || 'N/A';
 
 interface ExportToExcelProps {
-  data: any[];
+  data?: any[];
+  /** Loads the rows only when the admin clicks Export (returns null on failure). */
+  fetchData?: () => Promise<any[] | null | undefined>;
   fileName?: string;
   excludedCols?: string[];
   isFetchingData?: boolean;
 }
 const ExportToExcel = ({
   data,
+  fetchData,
   fileName,
   excludedCols,
   isFetchingData,
 }: ExportToExcelProps) => {
   const [isExporting, setIsExportingData] = useState(false);
+  const [isLoadingRows, setIsLoadingRows] = useState(false);
 
+  async function exportToExcelHandler() {
+    let rows: any[] = data ?? [];
+    if (fetchData) {
+      setIsLoadingRows(true);
+      try {
+        const fetched = await fetchData();
+        // The fetcher already showed an error toast
+        if (!fetched) return;
+        rows = fetched;
+      } finally {
+        setIsLoadingRows(false);
+      }
+    }
+    writeWorkbook(rows);
+  }
 
-  function exportToExcelHandler() {
+  function writeWorkbook(data: any[]) {
     setIsExportingData(true);
     // Create a new workbook
     const workbook = XLSX.utils.book_new();
@@ -216,13 +235,13 @@ const ExportToExcel = ({
     <div>
       <Button
         onClick={exportToExcelHandler}
-        disabled={isExporting || isFetchingData}
+        disabled={isExporting || isFetchingData || isLoadingRows}
         className="flex items-center gap-x-2"
       >
         <Download size={16} />
         {isExporting
           ? 'Exporting...'
-          : isFetchingData
+          : isFetchingData || isLoadingRows
           ? 'Loading...'
           : 'Export to Excel'}
       </Button>

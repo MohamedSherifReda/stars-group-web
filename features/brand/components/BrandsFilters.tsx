@@ -15,6 +15,13 @@ interface BrandsFiltersProps {
   setTempFilters: (filters: any) => void;
 }
 const BrandsFilters = ({ tempFilters, setTempFilters }: BrandsFiltersProps) => {
+  // The Language select is only shown while name or description has text;
+  // drop its value when it gets hidden so it isn't applied invisibly
+  const setTextFilter = (key: 'name' | 'description', value: string) => {
+    const next = { ...tempFilters, [key]: value };
+    if (!next.name && !next.description) delete next.language;
+    setTempFilters(next);
+  };
   return (
     <div className="flex-1 py-6 space-y-6 overflow-y-auto">
       <div className="space-y-2">
@@ -24,7 +31,7 @@ const BrandsFilters = ({ tempFilters, setTempFilters }: BrandsFiltersProps) => {
           placeholder="Filter by name..."
           value={tempFilters.name || ''}
           onChange={(e) =>
-            setTempFilters({ ...tempFilters, name: e.target.value })
+            setTextFilter('name', e.target.value)
           }
         />
       </div>
@@ -36,7 +43,7 @@ const BrandsFilters = ({ tempFilters, setTempFilters }: BrandsFiltersProps) => {
           placeholder="Filter by description..."
           value={tempFilters.description || ''}
           onChange={(e) =>
-            setTempFilters({ ...tempFilters, description: e.target.value })
+            setTextFilter('description', e.target.value)
           }
         />
       </div>

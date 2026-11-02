@@ -1,6 +1,6 @@
-import { termsAPI } from '@features/terms/Terms.api';
+import { TERMS_QUERY_KEY, termsAPI, useTermsRow } from '@features/terms/Terms.api';
 import { usePathname } from '@hooks/usePathname';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Button } from '@ui/common/button';
 import { Skeleton } from '@ui/common/skeleton';
 import TextEditor, { getBoundedEditorContent } from '@ui/common/TextEditor';
@@ -19,19 +19,19 @@ const PrivacyPolicy = () => {
   const editorRef = useRef(null);
   // Role comes from the server profile, not from storage
   const isAdmin = useIsAdmin();
-  const { data: privacyPolicy, isLoading: isLoadingPrivacyPolicy } = useQuery({
-    queryKey: ['privacyPolicy'],
-    queryFn: () =>
-      termsAPI.getTerms().then((res) => {
-        return res.data;
-      }),
-  });
+  const {
+    data: termsRow,
+    isLoading: isLoadingPrivacyPolicy,
+    isFetching: isFetchingPrivacyPolicy,
+    refetch: refetchPrivacyPolicy,
+  } = useTermsRow();
   const updatePrivacyPolicyMutation = useMutation({
-    mutationFn: (privacyPolicy: Terms) => termsAPI.updateTerms(privacyPolicy),
+    mutationFn: (privacyPolicy: Pick<Terms, 'policy'>) =>
+      termsAPI.updateTerms(privacyPolicy),
     onSuccess: () => {
       toast.success('Privacy policy updated successfully');
       setIsEditing(false);
-      queryClient.invalidateQueries({ queryKey: ['privacyPolicy'] });
+      queryClient.invalidateQueries({ queryKey: TERMS_QUERY_KEY });
     },
     onError: (error: any) => {
       toast.error(
@@ -44,12 +44,20 @@ const PrivacyPolicy = () => {
     if (editorRef.current) {
       const html = getBoundedEditorContent(editorRef.current);
       if (html === null) return;
-      updatePrivacyPolicyMutation.mutate({
-        policy: html,
-        terms: privacyPolicy?.data[0]?.terms || ' ',
-      });
+      // Send only the policy field; the terms are saved by their own page
+      updatePrivacyPolicyMutation.mutate({ policy: html });
     }
   }
+  // Load the latest row before editing so another admin's change isn't overwritten
+  async function startEditing() {
+    const result = await refetchPrivacyPolicy();
+    if (result.isError) {
+      toast.error('Failed to load the latest privacy policy');
+      return;
+    }
+    setIsEditing(true);
+  }
+
   if (isLoadingPrivacyPolicy) {
     return <Skeleton className="w-full h-full" />;
   }
@@ -61,13 +69,14 @@ const PrivacyPolicy = () => {
           {isAdmin && pathName === '/settings' && (
             <Button
               disabled={
-                isLoadingPrivacyPolicy || updatePrivacyPolicyMutation.isPending
+                isLoadingPrivacyPolicy ||
+                (!isEditing && isFetchingPrivacyPolicy) ||
+                updatePrivacyPolicyMutation.isPending
               }
               onClick={() => {
                 if (!isEditing) {
-                  setIsEditing(true);
-                }
-                if (isEditing) {
+                  startEditing();
+                } else {
                   onSaveHandler();
                 }
               }}
@@ -88,7 +97,7 @@ const PrivacyPolicy = () => {
         {isEditing ? (
           <TextEditor
             ref={editorRef}
-            initialValue={privacyPolicy?.data[0]?.policy as string}
+            initialValue={termsRow?.policy as string}
           />
         ) : (
           <main className="p-8">
@@ -102,14 +111,14 @@ const PrivacyPolicy = () => {
                   <p className="text-sm text-gray-500 mb-4">
                     <strong>Last Updated:</strong>{' '}
                     {DateFormatter.formatDate(
-                      privacyPolicy?.data[0]?.updated_at as string
+                      termsRow?.updated_at as string
                     )}
                   </p>
                   <Suspense fallback={<Skeleton className="w-full h-full" />}>
                     <div>
                       <div
                         dangerouslySetInnerHTML={{
-                          __html: sanitizeRichText(privacyPolicy?.data[0]?.policy),
+                          __html: sanitizeRichText(termsRow?.policy),
                         }}
                       />
                     </div>

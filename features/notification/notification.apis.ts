@@ -26,6 +26,14 @@ export const notificationsApi = {
       meta: { total: number; skip: number; take: number };
     }>('/scheduled-notifications', { params }),
 
+  /**
+   * Cancel a PENDING scheduled notification (409 when it is no longer pending)
+   */
+  cancelScheduledNotification: (id: number) =>
+    api.delete<{ data: ScheduledNotification }>(
+      `/scheduled-notifications/${id}`
+    ),
+
   getScheduledNotification: (id: number, params?: Record<string, any>) =>
     api.get<ScheduledNotification>(`/scheduled-notifications/${id}`, {
       params,

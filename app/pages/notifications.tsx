@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Send, Clock, Filter, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Send, Clock, Filter, RotateCcw, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import {
@@ -48,6 +48,27 @@ import {
 import NotificationsFilters from '@features/notification/components/NotificationsFilters';
 import ExportToExcel from '@ui/common/ExportToExcel/ExportToExcel';
 import { notificationsApi } from '@features/notification/notification.apis';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog';
+
+/** Reads the recipient count from the different send/schedule response shapes. */
+const getRecipientCount = (body: any): number | null => {
+  const count =
+    body?.count ??
+    body?.target_user_count ??
+    body?.data?.count ??
+    body?.data?.target_user_count;
+  return typeof count === 'number' ? count : null;
+};
+
+const recipientsLabel = (count: number) =>
+  `${count} recipient${count === 1 ? '' : 's'}`;
 
 
 export const meta = serveNotificationsMeta;
@@ -67,17 +88,8 @@ export default function Notifications() {
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<any>({});
   const [tempFilters, setTempFilters] = useState<any>({});
-  const [isLoadingExportedNotifications, setIsLoadingExportedNotifications] =
-    useState(false);
-  const [
-    isLoadingExportedScheduledNotifications,
-    setIsLoadingExportedScheduledNotifications,
-  ] = useState(false);
-  const [exportedNotifications, setExportedNotifications] = useState<
-    Notification[]
-  >([]);
-  const [exportedScheduledNotifications, setExportedScheduledNotifications] =
-    useState<ScheduledNotification[]>([]);
+  const [cancellingScheduled, setCancellingScheduled] =
+    useState<ScheduledNotification | null>(null);
   const queryClient = useQueryClient();
 
   // Pagination state for brands used in the NotificationForm
@@ -258,22 +270,18 @@ export default function Notifications() {
   const createMutation = useMutation({
     mutationFn: (notification: CreateNotificationPayload) =>
       notificationsApi.createNotification(notification),
-    onSuccess: async () => {
+    onSuccess: (res, payload) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       setIsCreateOpen(false);
       setCurrentPage(1);
-      toast.success('Notification created successfully');
-      // refresh the exported notifications data after creating a notification.
-      await getAllExportedToExcelNotifications(
-        appliedFilters,
-        setIsLoadingExportedNotifications,
-        setExportedNotifications
-      );
-      await getAllExportedToExcelScheduledNotifications(
-        appliedFilters,
-        setIsLoadingExportedScheduledNotifications,
-        setExportedScheduledNotifications
+      // Show how many users the backend actually targeted (users and ranks intersect)
+      const count = getRecipientCount(res?.data);
+      const action = payload?.schedule_at ? 'scheduled for' : 'sent to';
+      toast.success(
+        count !== null
+          ? `Notification ${action} ${recipientsLabel(count)}`
+          : 'Notification created successfully'
       );
     },
     onError: (error: any) => {
@@ -287,22 +295,18 @@ export default function Notifications() {
   const broadcastMutation = useMutation({
     mutationFn: (notification: BroadCastNotificationPayload) =>
       notificationsApi.broadcastNotification(notification),
-    onSuccess: async () => {
+    onSuccess: (res, payload) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       setIsCreateOpen(false);
       setCurrentPage(1);
-      toast.success('Notification broadcasted to all users successfully');
-      // refresh the exported notifications data after broadcasting a notification.
-      await getAllExportedToExcelNotifications(
-        appliedFilters,
-        setIsLoadingExportedNotifications,
-        setExportedNotifications
-      );
-      await getAllExportedToExcelScheduledNotifications(
-        appliedFilters,
-        setIsLoadingExportedScheduledNotifications,
-        setExportedScheduledNotifications
+      const count = getRecipientCount(res?.data);
+      toast.success(
+        payload?.schedule_at
+          ? 'Broadcast notification scheduled successfully'
+          : count !== null
+          ? `Notification broadcasted to ${recipientsLabel(count)}`
+          : 'Notification broadcasted to all users successfully'
       );
     },
     onError: (error: any) => {
@@ -315,25 +319,37 @@ export default function Notifications() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.deleteNotification(id),
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       toast.success('Notification deleted successfully');
-      // refresh the exported notifications data after deleting a notification.
-      await getAllExportedToExcelNotifications(
-        appliedFilters,
-        setIsLoadingExportedNotifications,
-        setExportedNotifications
-      );
-      await getAllExportedToExcelScheduledNotifications(
-        appliedFilters,
-        setIsLoadingExportedScheduledNotifications,
-        setExportedScheduledNotifications
-      );
     },
     onError: (error: any) => {
       toast.error(
         error.response?.data?.message || 'Failed to delete notification'
+      );
+    },
+  });
+
+  // Cancel a pending scheduled notification (BUG-31)
+  const cancelScheduledMutation = useMutation({
+    mutationFn: (id: number) =>
+      notificationsApi.cancelScheduledNotification(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
+      setCancellingScheduled(null);
+      toast.success('Scheduled notification cancelled');
+    },
+    onError: (error: any) => {
+      // 409: it already started or finished; refresh so the row shows its real status
+      queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
+      setCancellingScheduled(null);
+      toast.error(
+        error.response?.status === 409
+          ? error.response?.data?.message ||
+              'This notification is no longer pending and cannot be cancelled'
+          : error.response?.data?.message ||
+              'Failed to cancel the scheduled notification'
       );
     },
   });
@@ -375,7 +391,9 @@ export default function Notifications() {
 
   const handleApplyFilters = () => {
     setAppliedFilters(tempFilters);
+    // Both tabs share the filters, so both go back to the first page
     setCurrentPage(1);
+    setScheduledCurrentPage(1);
     setIsFilterSidebarOpen(false);
   };
 
@@ -383,6 +401,7 @@ export default function Notifications() {
     setTempFilters({});
     setAppliedFilters({});
     setCurrentPage(1);
+    setScheduledCurrentPage(1);
     setIsFilterSidebarOpen(false);
   };
 
@@ -545,21 +564,24 @@ export default function Notifications() {
       header: 'Created At',
       cell: ({ row }) => formatDateTime(row.original.created_at),
     },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) =>
+        row.original.status === 'pending' ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCancellingScheduled(row.original)}
+            title="Cancel scheduled notification"
+            disabled={cancelScheduledMutation.isPending}
+          >
+            <Ban className="w-4 h-4 mr-1 text-red-500" />
+            Cancel
+          </Button>
+        ) : null,
+    },
   ];
-
-  // loading all of the banners that match the applied filters to prepare them for export to excel...
-  useEffect(() => {
-    getAllExportedToExcelNotifications(
-      appliedFilters,
-      setIsLoadingExportedNotifications,
-      setExportedNotifications
-    );
-    getAllExportedToExcelScheduledNotifications(
-      appliedFilters,
-      setIsLoadingExportedScheduledNotifications,
-      setExportedScheduledNotifications
-    );
-  }, [appliedFilters]);
 
   return (
     <div className="space-y-6">
@@ -596,14 +618,11 @@ export default function Notifications() {
             )}
           </Button>
           <ExportToExcel
-            isFetchingData={
-              isLoadingExportedNotifications ||
-              isLoadingExportedScheduledNotifications
-            }
-            data={
+            // Rows are loaded only when the admin clicks Export
+            fetchData={() =>
               activeTab === 'all'
-                ? exportedNotifications || []
-                : exportedScheduledNotifications || []
+                ? getAllExportedToExcelNotifications(appliedFilters)
+                : getAllExportedToExcelScheduledNotifications(appliedFilters)
             }
             fileName={
               activeTab === 'all'
@@ -763,6 +782,50 @@ export default function Notifications() {
           </Tabs>
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={!!cancellingScheduled}
+        onOpenChange={(open) => {
+          if (!open && !cancelScheduledMutation.isPending) {
+            setCancellingScheduled(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel scheduled notification?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &ldquo;{cancellingScheduled?.title}&rdquo; scheduled for{' '}
+              {formatDateTime(cancellingScheduled?.schedule_at)} will not be
+              sent. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={cancelScheduledMutation.isPending}
+              onClick={() => setCancellingScheduled(null)}
+            >
+              Keep it
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={cancelScheduledMutation.isPending}
+              onClick={() => {
+                if (cancellingScheduled) {
+                  cancelScheduledMutation.mutate(cancellingScheduled.id);
+                }
+              }}
+            >
+              {cancelScheduledMutation.isPending
+                ? 'Cancelling...'
+                : 'Cancel notification'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

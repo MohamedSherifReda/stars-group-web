@@ -229,6 +229,8 @@ export default function OnboardingImages() {
                 ? Math.max(...onboardingImages.data.map((i: OnboardingImage) => i.display_order)) + 1 
                 : 1;
               setFormData({ display_order: nextOrder });
+              // Never carry over a file chosen in another (cancelled) dialog
+              setImageFile(null);
             } else {
               resetForm();
             }
@@ -282,7 +284,10 @@ export default function OnboardingImages() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    resetForm();
+                  }}
                 >
                   Cancel
                 </Button>
@@ -326,7 +331,11 @@ export default function OnboardingImages() {
       <Dialog
         open={!!editingImage}
         onOpenChange={(open) => {
-          if (!open) setEditingImage(null);
+          if (!open) {
+            setEditingImage(null);
+            // Drop the file chosen in Edit so a later Add doesn't upload it
+            resetForm();
+          }
         }}
       >
         <DialogContent>
@@ -373,7 +382,10 @@ export default function OnboardingImages() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setEditingImage(null)}
+                onClick={() => {
+                  setEditingImage(null);
+                  resetForm();
+                }}
               >
                 Cancel
               </Button>

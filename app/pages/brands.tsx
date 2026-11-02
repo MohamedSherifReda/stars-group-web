@@ -36,7 +36,7 @@ import {
   RotateCcw,
   Trash2,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import serveBrandsMeta from '~/meta/serveBrandsMeta';
 import { bannersApi } from '@features/banner/banner.apis';
@@ -103,8 +103,6 @@ export default function Brands({ meta }: { meta: any }) {
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<any>({});
   const [tempFilters, setTempFilters] = useState<any>({});
-  const [isLoadingExportedBrands, setIsLoadingExportedBrands] = useState(false);
-  const [exportedBrands, setExportedBrands] = useState<Brand[]>([]);
   const queryClient = useQueryClient();
 
   const {
@@ -168,11 +166,25 @@ export default function Brands({ meta }: { meta: any }) {
     },
   });
 
+  // Total number of brands regardless of the table filters: display order runs 1..total
+  const { data: unfilteredBrandsTotal, refetch: refetchUnfilteredBrandsTotal } =
+    useQuery({
+      queryKey: ['brands', 'unfiltered-total'],
+      queryFn: () =>
+        brandsApi
+          .getBrands(
+            { pagination: { skip: 0, take: 1 } },
+            { 'x-skip-translations': true }
+          )
+          .then((res) => res.data?.meta?.total ?? 0),
+    });
+
   const {
     data: banners = { data: [], meta: { total: 0, skip: 0, take: 0 } },
     isLoading: isBannersLoading,
   } = useQuery({
-    queryKey: ['banners'],
+    // Ask for every banner: the backend default page (25) would hide the rest from the picker
+    queryKey: ['banners', 'all-options'],
     queryFn: () =>
       bannersApi
         .getBanners({
@@ -180,6 +192,7 @@ export default function Brands({ meta }: { meta: any }) {
           'relations[image_en]': 'true',
           'relations[brand]': 'true',
           includeAllBranded: true,
+          pagination: { skip: 0, take: 1000 },
         })
         .then((res) => res.data),
   });
@@ -190,17 +203,11 @@ export default function Brands({ meta }: { meta: any }) {
 
   const createMutation = useMutation({
     mutationFn: (brand: Partial<Brand>) => brandsApi.createBrand(brand),
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setIsCreateOpen(false);
       resetForm();
       toast.success('Brand created successfully');
-      // refresh the exported brands data after creating or updating a brand.
-      await getAllExportedToExcelBrands(
-        appliedFilters,
-        setIsLoadingExportedBrands,
-        setExportedBrands
-      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create brand');
@@ -210,17 +217,11 @@ export default function Brands({ meta }: { meta: any }) {
   const updateMutation = useMutation({
     mutationFn: ({ id, brand }: { id: number; brand: Partial<Brand> }) =>
       brandsApi.updateBrand(id, brand),
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingBrand(null);
       resetForm();
       toast.success('Brand updated successfully');
-      // refresh the exported brands data after creating or updating a brand.
-      await getAllExportedToExcelBrands(
-        appliedFilters,
-        setIsLoadingExportedBrands,
-        setExportedBrands
-      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update brand');
@@ -252,15 +253,9 @@ export default function Brands({ meta }: { meta: any }) {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => brandsApi.deleteBrand(id),
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       toast.success('Brand deleted successfully');
-      // refresh the exported brands data after deleting a brand.
-      await getAllExportedToExcelBrands(
-        appliedFilters,
-        setIsLoadingExportedBrands,
-        setExportedBrands
-      );
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete brand');
@@ -287,6 +282,41 @@ export default function Brands({ meta }: { meta: any }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate the display order BEFORE uploading anything, against the unfiltered brand count
+    let displayOrderValue: number | undefined;
+    {
+      const latestTotal = await refetchUnfilteredBrandsTotal();
+      const totalBrands = latestTotal.data ?? unfilteredBrandsTotal ?? 0;
+      // An edit can move a brand to 1..total; a new brand can also take total + 1
+      const maxOrder = editingBrand ? totalBrands : totalBrands + 1;
+      const rawOrder = formData.display_order;
+      if (rawOrder !== undefined && rawOrder !== '') {
+        const parsed = Number(rawOrder);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          toast.error('Display order must be a non-negative number');
+          return;
+        }
+        // An edit that keeps the brand's current position is always allowed
+        const unchanged = !!editingBrand && parsed === editingBrand.display_order;
+        if (!unchanged && parsed > maxOrder) {
+          toast.error(
+            editingBrand
+              ? `Display order cannot be greater than the total number of brands (${maxOrder})`
+              : `Display order cannot be greater than ${maxOrder} for a new brand`
+          );
+          return;
+        }
+        displayOrderValue = parsed;
+      } else if (!editingBrand) {
+        // Empty on create: put the new brand at the end
+        displayOrderValue = totalBrands + 1;
+        setFormData((prev) => ({
+          ...prev,
+          display_order: String(totalBrands + 1),
+        }));
+      }
+    }
+
     setIsSubmittingForm(true);
     try {
       let logoId: number | undefined;
@@ -309,35 +339,6 @@ export default function Brands({ meta }: { meta: any }) {
         logoBackgroundId = logoBackgroundResponse.data?.data?.id;
       }
 
-      const totalBrands = brands?.meta?.total ?? brands?.data?.length ?? 0;
-
-      let displayOrderValue: string | number | undefined =
-        formData.display_order;
-      if (displayOrderValue && displayOrderValue !== '') {
-        const parsed = Number(displayOrderValue);
-
-        if (!Number.isFinite(parsed) || parsed < 0) {
-          toast.error('Display order must be a non-negative number');
-          return;
-        }
-
-        const maxOrderForCreate = totalBrands + 1;
-        if (parsed > maxOrderForCreate) {
-          toast.error(
-            `Display order cannot be greater than ${maxOrderForCreate} for a new brand`
-          );
-          return;
-        }
-
-        displayOrderValue = parsed;
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          display_order: String(brands?.meta?.total! + 1),
-        }));
-        displayOrderValue = brands?.meta?.total! + 1;
-      }
-
       const brandData: any = {
         name: formData.name_ar,
         heading_title: formData.heading_title_ar,
@@ -347,19 +348,24 @@ export default function Brands({ meta }: { meta: any }) {
         ...(logoId && { logo_id: logoId }),
         ...(productPictureId && { product_picture_id: productPictureId }),
         ...(logoBackgroundId && { background_logo_id: logoBackgroundId }),
-        ...(displayOrderValue &&
-        typeof displayOrderValue === 'number' &&
-        displayOrderValue > 0
+        ...(displayOrderValue !== undefined && displayOrderValue > 0
           ? {
               display_order: displayOrderValue,
             }
           : {}),
-        ...(formData?.banners &&
-          formData.banners.length > 0 && {
-            banners: formData.banners.map((banner) => ({
-              id: parseInt(banner as string),
-            })),
-          }),
+        // On edit always send the list, [] included, so removing the last banner detaches it
+        ...(editingBrand
+          ? {
+              banners: (formData?.banners ?? []).map((banner) => ({
+                id: parseInt(banner as string),
+              })),
+            }
+          : formData?.banners &&
+            formData.banners.length > 0 && {
+              banners: formData.banners.map((banner) => ({
+                id: parseInt(banner as string),
+              })),
+            }),
         brand_id_brand_translations:
           formData?.name_en ||
           formData?.heading_title_en ||
@@ -438,7 +444,8 @@ export default function Brands({ meta }: { meta: any }) {
       return;
     }
 
-    const totalBrands = brands?.meta?.total ?? brands?.data?.length ?? 0;
+    // Use the unfiltered count: the table total shrinks when filters are applied
+    const totalBrands = unfilteredBrandsTotal ?? brands?.meta?.total ?? 0;
 
     if (value > totalBrands) {
       toast.error(
@@ -560,7 +567,7 @@ export default function Brands({ meta }: { meta: any }) {
               <Input
                 type="number"
                 min={0}
-                max={brands?.meta?.total ?? undefined}
+                max={unfilteredBrandsTotal ?? undefined}
                 value={editingDisplayOrderValue}
                 onChange={(e) => setEditingDisplayOrderValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -676,15 +683,6 @@ export default function Brands({ meta }: { meta: any }) {
     setTempFilters(appliedFilters);
     setIsFilterSidebarOpen(true);
   };
-
-  // loading all of the brands that match the applied filters to prepare them for export to excel...
-  useEffect(() => {
-    getAllExportedToExcelBrands(
-      appliedFilters,
-      setIsLoadingExportedBrands,
-      setExportedBrands
-    );
-  }, [appliedFilters]);
 
   return (
     <div className="space-y-6">
@@ -929,9 +927,7 @@ export default function Brands({ meta }: { meta: any }) {
                       id="display_order"
                       type="number"
                       min={0}
-                      max={
-                        (brands?.meta?.total ?? brands?.data?.length ?? 0) + 1
-                      }
+                      max={(unfilteredBrandsTotal ?? 0) + 1}
                       value={formData.display_order}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -999,9 +995,9 @@ export default function Brands({ meta }: { meta: any }) {
 
           <ExportToExcel
             fileName="brands.xlsx"
-            data={exportedBrands ?? []}
+            // Rows are loaded only when the admin clicks Export
+            fetchData={() => getAllExportedToExcelBrands(appliedFilters)}
             excludedCols={excludedFromExcelExport}
-            isFetchingData={isLoadingExportedBrands}
           />
         </div>
       </div>
