@@ -240,6 +240,43 @@
                 ]
             }
         },
+        "/auth/change-password": {
+            "post": {
+                "operationId": "AuthController_changePassword",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "description": "Current and new password of the signed-in user.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "current_password",
+                                    "new_password"
+                                ],
+                                "properties": {
+                                    "current_password": {
+                                        "type": "string"
+                                    },
+                                    "new_password": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password changed; a fresh session is returned (and set as cookie for the CMS)."
+                    }
+                },
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
         "/auth/forget-password": {
             "post": {
                 "operationId": "AuthController_forgetPassword",
@@ -748,6 +785,11 @@
                         }
                     }
                 },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
                 "tags": [
                     "Media"
                 ]
@@ -769,6 +811,11 @@
                         }
                     }
                 },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
                 "tags": [
                     "Media"
                 ]
@@ -813,6 +860,11 @@
                         }
                     }
                 },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
                 "tags": [
                     "Media"
                 ]
@@ -833,42 +885,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The Media file is being streamed.",
-                        "headers": {
-                            "Content-Type": {
-                                "description": "MIME type of the file",
-                                "schema": {
-                                    "type": "string"
-                                }
-                            },
-                            "Content-Length": {
-                                "description": "Size of the file in bytes",
-                                "schema": {
-                                    "type": "number"
-                                }
-                            },
-                            "Accept-Ranges": {
-                                "description": "Indicates that the server supports range requests",
-                                "schema": {
-                                    "type": "string",
-                                    "example": "bytes"
-                                }
-                            },
-                            "Content-Range": {
-                                "description": "Range of bytes being served (for partial content)",
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "206": {
-                        "description": "Partial content is being streamed (for range requests)."
-                    },
-                    "404": {
-                        "description": "Media file not found."
+                        "description": "The Media file is being streamed."
                     }
                 },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
                 "tags": [
                     "Media"
                 ]
@@ -1487,7 +1511,7 @@
                 "parameters": [],
                 "requestBody": {
                     "required": true,
-                    "description": "The Barq Notification to be created.",
+                    "description": "The Barq Notification to be created. Requires x-stars-api-key (server-to-server; not used by mobile).",
                     "content": {
                         "application/json": {
                             "schema": {
@@ -1949,6 +1973,45 @@
                 "tags": [
                     "ScheduledNotification"
                 ]
+            },
+            "delete": {
+                "operationId": "ScheduledNotificationController_cancel",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The pending Scheduled Notification has been cancelled (status set to \"cancelled\"); it will not be sent.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ScheduledNotificationsEntity"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Scheduled Notification not found."
+                    },
+                    "409": {
+                        "description": "The Scheduled Notification is no longer pending (already processing, sent, failed or cancelled)."
+                    }
+                },
+                "tags": [
+                    "ScheduledNotification"
+                ]
             }
         },
         "/onboarding-images": {
@@ -2145,9 +2208,6 @@
                 "responses": {
                     "200": {
                         "description": "Onboarding images have been successfully reordered."
-                    },
-                    "201": {
-                        "description": ""
                     }
                 },
                 "tags": [
@@ -2182,6 +2242,199 @@
                 },
                 "tags": [
                     "OnboardingImages"
+                ]
+            }
+        },
+        "/cms-users": {
+            "get": {
+                "operationId": "CmsUsersController_list",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "CMS users"
+                ]
+            }
+        },
+        "/cms-users/invitations": {
+            "get": {
+                "operationId": "CmsUsersController_listInvitations",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "CMS users"
+                ]
+            },
+            "post": {
+                "operationId": "CmsUsersController_invite",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "CMS users"
+                ]
+            }
+        },
+        "/cms-users/invitations/{id}/resend": {
+            "post": {
+                "operationId": "CmsUsersController_resend",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "CMS users"
+                ]
+            }
+        },
+        "/cms-users/invitations/{id}": {
+            "delete": {
+                "operationId": "CmsUsersController_revoke",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "CMS users"
+                ]
+            }
+        },
+        "/cms-users/{id}/password": {
+            "patch": {
+                "operationId": "CmsUsersController_setPassword",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "password",
+                                    "current_password"
+                                ],
+                                "properties": {
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "current_password": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "CMS users"
+                ]
+            }
+        },
+        "/auth/invitations/{token}": {
+            "get": {
+                "operationId": "CmsInvitationsPublicController_lookup",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
+        "/auth/accept-invitation": {
+            "post": {
+                "operationId": "CmsInvitationsPublicController_accept",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "token",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "Auth"
                 ]
             }
         }
@@ -2247,6 +2500,7 @@
                     },
                     "brand_translation_brand": {
                         "nullable": true,
+                        "type": "object",
                         "allOf": [
                             {
                                 "$ref": "#/components/schemas/BrandsEntity"
@@ -2608,11 +2862,15 @@
                     "fcm_token": {
                         "type": "string"
                     },
+                    "token_version": {
+                        "type": "number"
+                    },
                     "is_logged_in": {
                         "type": "boolean"
                     },
                     "ui_configurations": {
                         "type": "object",
+                        "additionalProperties": true,
                         "nullable": true
                     },
                     "profile_image": {
@@ -2662,6 +2920,7 @@
                     "pending_email",
                     "refresh_token",
                     "fcm_token",
+                    "token_version",
                     "is_logged_in",
                     "ui_configurations",
                     "profile_image",
@@ -2692,6 +2951,10 @@
                     "format": {
                         "type": "string"
                     },
+                    "uploaded_by": {
+                        "type": "number",
+                        "nullable": true
+                    },
                     "created_at": {
                         "format": "date-time",
                         "type": "string"
@@ -2720,6 +2983,7 @@
                     "size",
                     "mime_type",
                     "format",
+                    "uploaded_by",
                     "created_at",
                     "updated_at",
                     "user",
@@ -2780,6 +3044,7 @@
                     },
                     "terms_translation_terms": {
                         "nullable": true,
+                        "type": "object",
                         "allOf": [
                             {
                                 "$ref": "#/components/schemas/TermsEntity"
@@ -3013,6 +3278,11 @@
             "Complete_forget_password": {
                 "type": "object",
                 "properties": {
+                    "reset_token": {
+                        "type": "string",
+                        "minLength": 32,
+                        "maxLength": 512
+                    },
                     "identifier": {
                         "type": "string"
                     },
@@ -3124,7 +3394,8 @@
                 "type": "object",
                 "properties": {
                     "session_id": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 200
                     }
                 },
                 "required": [
@@ -3396,6 +3667,9 @@
                             },
                             "desquare_token": {
                                 "type": "string"
+                            },
+                            "reset_token": {
+                                "type": "string"
                             }
                         },
                         "required": [
@@ -3421,7 +3695,7 @@
                     "otp": {
                         "type": "string",
                         "minLength": 4,
-                        "maxLength": 4
+                        "maxLength": 10
                     },
                     "phone_number_key": {
                         "type": "string"
@@ -3441,6 +3715,7 @@
                     },
                     "redirect_url": {
                         "type": "string",
+                        "maxLength": 2048,
                         "nullable": true
                     },
                     "image_ar_id": {
@@ -4022,6 +4297,7 @@
                     },
                     "redirect_url": {
                         "type": "string",
+                        "maxLength": 2048,
                         "nullable": true
                     },
                     "image_ar_id": {
@@ -4041,9 +4317,7 @@
                         "type": "boolean"
                     }
                 },
-                "required": [
-                    "brand_id"
-                ],
+                "required": [],
                 "additionalProperties": false
             },
             "CreateBrands": {
@@ -4059,7 +4333,8 @@
                         "type": "string"
                     },
                     "shop_url": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 2048
                     },
                     "gradient_hex": {
                         "type": "string"
@@ -4075,7 +4350,7 @@
                     },
                     "display_order": {
                         "type": "integer",
-                        "default": 0
+                        "nullable": true
                     },
                     "brand_id_brand_translations": {
                         "anyOf": [
@@ -4880,7 +5155,8 @@
                         "type": "string"
                     },
                     "shop_url": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 2048
                     },
                     "gradient_hex": {
                         "type": "string"
@@ -5781,10 +6057,12 @@
                 "type": "object",
                 "properties": {
                     "title": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 255
                     },
                     "message": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 20000
                     },
                     "phone_number": {
                         "type": "string"
@@ -5801,13 +6079,16 @@
                 "type": "object",
                 "properties": {
                     "title": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 255
                     },
                     "message": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 20000
                     },
                     "link": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 2048
                     },
                     "brand_id": {
                         "type": "integer"
@@ -5822,7 +6103,8 @@
                                 3
                             ]
                         },
-                        "minItems": 1
+                        "minItems": 1,
+                        "maxItems": 3
                     },
                     "schedule_at": {
                         "type": "string",
@@ -5839,13 +6121,16 @@
                 "type": "object",
                 "properties": {
                     "title": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 255
                     },
                     "message": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 20000
                     },
                     "link": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 2048
                     },
                     "brand_id": {
                         "type": "integer"
@@ -5855,7 +6140,8 @@
                         "items": {
                             "type": "integer"
                         },
-                        "minItems": 1
+                        "minItems": 1,
+                        "maxItems": 10000
                     },
                     "ranks": {
                         "type": "array",
@@ -5867,7 +6153,8 @@
                                 3
                             ]
                         },
-                        "minItems": 1
+                        "minItems": 1,
+                        "maxItems": 3
                     },
                     "schedule_at": {
                         "type": "string",
@@ -7098,13 +7385,16 @@
                 "type": "object",
                 "properties": {
                     "title": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 255
                     },
                     "message": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 20000
                     },
                     "link": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 2048
                     },
                     "user_id": {
                         "type": "integer"
@@ -7535,10 +7825,12 @@
                 "type": "object",
                 "properties": {
                     "terms": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 200000
                     },
                     "policy": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 200000
                     },
                     "terms_id_terms_translations": {
                         "anyOf": [
@@ -7548,10 +7840,12 @@
                                     "type": "object",
                                     "properties": {
                                         "terms": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "maxLength": 200000
                                         },
                                         "policy": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "maxLength": 200000
                                         },
                                         "language": {
                                             "enum": [
@@ -7738,10 +8032,12 @@
                 "type": "object",
                 "properties": {
                     "terms": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 200000
                     },
                     "policy": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 200000
                     },
                     "terms_id_terms_translations": {
                         "anyOf": [
@@ -7759,10 +8055,12 @@
                                             "nullable": true
                                         },
                                         "terms": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "maxLength": 200000
                                         },
                                         "policy": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "maxLength": 200000
                                         },
                                         "language": {
                                             "enum": [
@@ -7855,42 +8153,6 @@
                                     "LessThan",
                                     "GreaterThanOrEq",
                                     "LessThanOrEq",
-                                    "IsNull",
-                                    "IsNotNull",
-                                    "In",
-                                    "NotIn"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "password": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "Contains",
-                                    "StartsWith",
-                                    "EndsWith",
                                     "IsNull",
                                     "IsNotNull",
                                     "In",
@@ -8048,68 +8310,6 @@
                         "additionalProperties": false,
                         "nullable": true
                     },
-                    "verification_code": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "Contains",
-                                    "StartsWith",
-                                    "EndsWith",
-                                    "IsNull",
-                                    "IsNotNull",
-                                    "In",
-                                    "NotIn"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "verification_code_expire_at": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "GreaterThan",
-                                    "LessThan",
-                                    "GreaterThanOrEq",
-                                    "LessThanOrEq",
-                                    "IsNull",
-                                    "IsNotNull"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
                     "account_verified": {
                         "type": "object",
                         "properties": {
@@ -8128,248 +8328,6 @@
                                 "enum": [
                                     "Is",
                                     "IsNot",
-                                    "IsNull",
-                                    "IsNotNull"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "verification_reason": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "Contains",
-                                    "StartsWith",
-                                    "EndsWith",
-                                    "IsNull",
-                                    "IsNotNull",
-                                    "In",
-                                    "NotIn"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "apple_token": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "Contains",
-                                    "StartsWith",
-                                    "EndsWith",
-                                    "IsNull",
-                                    "IsNotNull",
-                                    "In",
-                                    "NotIn"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "google_token": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "Contains",
-                                    "StartsWith",
-                                    "EndsWith",
-                                    "IsNull",
-                                    "IsNotNull",
-                                    "In",
-                                    "NotIn"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "facebook_token": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "Contains",
-                                    "StartsWith",
-                                    "EndsWith",
-                                    "IsNull",
-                                    "IsNotNull",
-                                    "In",
-                                    "NotIn"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "access_token": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "Contains",
-                                    "StartsWith",
-                                    "EndsWith",
-                                    "IsNull",
-                                    "IsNotNull",
-                                    "In",
-                                    "NotIn"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "de_square_token": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "anyOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                ]
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "Contains",
-                                    "StartsWith",
-                                    "EndsWith",
-                                    "IsNull",
-                                    "IsNotNull",
-                                    "In",
-                                    "NotIn"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "$op"
-                        ],
-                        "additionalProperties": false,
-                        "nullable": true
-                    },
-                    "de_square_token_expire_at": {
-                        "type": "object",
-                        "properties": {
-                            "$val": {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            "$op": {
-                                "enum": [
-                                    "Eq",
-                                    "NotEq",
-                                    "GreaterThan",
-                                    "LessThan",
-                                    "GreaterThanOrEq",
-                                    "LessThanOrEq",
                                     "IsNull",
                                     "IsNotNull"
                                 ]
@@ -8626,12 +8584,6 @@
                             "desc"
                         ]
                     },
-                    "password": {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ]
-                    },
                     "name": {
                         "enum": [
                             "asc",
@@ -8656,12 +8608,6 @@
                             "desc"
                         ]
                     },
-                    "verification_code": {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ]
-                    },
                     "verification_code_expire_at": {
                         "enum": [
                             "asc",
@@ -8669,42 +8615,6 @@
                         ]
                     },
                     "account_verified": {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ]
-                    },
-                    "verification_reason": {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ]
-                    },
-                    "apple_token": {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ]
-                    },
-                    "google_token": {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ]
-                    },
-                    "facebook_token": {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ]
-                    },
-                    "access_token": {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ]
-                    },
-                    "de_square_token": {
                         "enum": [
                             "asc",
                             "desc"
@@ -8845,16 +8755,12 @@
                         "type": "string",
                         "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?])[A-Za-z\\d!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]{8,}$"
                     },
+                    "current_password": {
+                        "type": "string",
+                        "maxLength": 256
+                    },
                     "fcm_token": {
                         "type": "string"
-                    },
-                    "rank": {
-                        "type": "integer",
-                        "enum": [
-                            1,
-                            2,
-                            3
-                        ]
                     },
                     "birthdate": {
                         "type": "string",

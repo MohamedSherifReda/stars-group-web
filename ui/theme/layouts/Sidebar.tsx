@@ -10,6 +10,7 @@ import {
   File,
   CircleUserRound,
   Settings,
+  UserCog,
 } from 'lucide-react';
 import { Button } from '@ui/common/button';
 import { useAuthStore } from 'infrastructure/store/auth';
@@ -24,6 +25,11 @@ const sidebarItems = [
     title: 'Users',
     href: '/users',
     icon: Users,
+  },
+  {
+    title: 'CMS Users',
+    href: '/admins',
+    icon: UserCog,
   },
   {
     title: 'Brands',

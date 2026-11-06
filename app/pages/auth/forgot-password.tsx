@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { queryClient } from '@utils/queryClient';
@@ -15,6 +15,7 @@ import {
 import { Input } from '@ui/common/input';
 import { Button } from '@ui/common/button';
 import api from '@utils/api';
+import { PASSWORD_HINT, PASSWORD_REGEX } from '@utils/password';
 import serveForgetPasswordMeta from '~/meta/serveForgetPasswordMeta';
 
 export const meta = serveForgetPasswordMeta;
@@ -25,13 +26,23 @@ export default function ForgotPassword() {
   );
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  // Seconds until "Resend code" is available again
+  const [cooldown, setCooldown] = useState(0);
   const [otp, setOTP] = useState('');
   // Held in component state only (never storage); cleared on success and on going back
   const [resetToken, setResetToken] = useState('');
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [cooldown]);
+
   const requestResetMutation = useMutation({
     mutationFn: (identifier: string) => authApi.forgetPassword(identifier),
     onSuccess: () => {
       setStep('verify_otp');
+      setCooldown(30);
       // Same message whether or not the account exists
       toast.success('If the account exists, a reset code has been sent');
     },
@@ -43,6 +54,7 @@ export default function ForgotPassword() {
         toast.error('Something went wrong, please try again');
       } else {
         setStep('verify_otp');
+        setCooldown(30);
         toast.success('If the account exists, a reset code has been sent');
       }
     },
@@ -96,6 +108,7 @@ export default function ForgotPassword() {
       setStep('request');
       setIdentifier('');
       setPassword('');
+      setConfirmPassword('');
       setResetToken('');
       // Full navigation to a fresh login page (no in-memory state carried over)
       window.location.assign('/auth/login');
@@ -119,6 +132,14 @@ export default function ForgotPassword() {
     e.preventDefault();
     if (!password) {
       toast.error('Please enter your new password');
+      return;
+    }
+    if (!PASSWORD_REGEX.test(password)) {
+      toast.error(PASSWORD_HINT);
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
     completeResetMutation.mutate({ identifier, password, resetToken });
@@ -205,6 +226,15 @@ export default function ForgotPassword() {
                 </Button>
                 <Button
                   type="button"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={cooldown > 0 || requestResetMutation.isPending}
+                  onClick={() => requestResetMutation.mutate(identifier)}
+                >
+                  {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+                </Button>
+                <Button
+                  type="button"
                   variant="outline"
                   className="w-full"
                   onClick={() => setStep('request')}
@@ -224,9 +254,28 @@ export default function ForgotPassword() {
                   type="password"
                   placeholder="Enter new password"
                   value={password}
+                  autoComplete="new-password"
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <p className="text-xs text-gray-500">{PASSWORD_HINT}</p>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="confirm-password" className="text-sm font-medium">
+                  Confirm New Password
+                </label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Repeat new password"
+                  value={confirmPassword}
+                  autoComplete="new-password"
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-sm text-red-600">Passwords do not match</p>
+                )}
               </div>
               <Button
                 type="submit"
@@ -244,6 +293,7 @@ export default function ForgotPassword() {
                 onClick={() => {
                   setResetToken('');
                   setPassword('');
+                  setConfirmPassword('');
                   setStep('request');
                 }}
               >

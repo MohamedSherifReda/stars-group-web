@@ -89,7 +89,7 @@ export type UsersEntity = {
     verification_code: string;
     verification_code_expire_at: string;
     account_verified: boolean;
-    verification_code_reason: 'signup' | 'forget_password' | 'forget_password_verified' | 'complete_phone_number' | 'update_phone_number' | 'ask_update_phone_number' | 'ask_update_phone_number_verified' | 'update_email' | 'ask_update_email_verified' | 'ask_update_email';
+    verification_code_reason: 'signup' | 'forget_password' | 'forget_password_verified' | 'complete_phone_number' | 'social_login_verify' | 'update_phone_number' | 'ask_update_phone_number' | 'ask_update_phone_number_verified' | 'update_email' | 'ask_update_email_verified' | 'ask_update_email';
     apple_token: string;
     google_token: string;
     facebook_token: string;
@@ -103,6 +103,7 @@ export type UsersEntity = {
     pending_email: string;
     refresh_token: string;
     fcm_token: string;
+    token_version: number;
     is_logged_in: boolean;
     ui_configurations: {
         [key: string]: unknown;
@@ -121,6 +122,7 @@ export type MediaEntity = {
     size: number;
     mime_type: string;
     format: string;
+    uploaded_by: number | null;
     created_at: string;
     updated_at: string;
     user: UsersEntity;
@@ -198,6 +200,7 @@ export type CompletePhoneNumberResponse = {
 };
 
 export type CompleteForgetPassword = {
+    reset_token?: string;
     identifier: string;
     password: string;
 };
@@ -278,6 +281,8 @@ export type Signin = {
     email?: string;
     name?: string;
     phone_number_key?: string;
+    remember_me?: boolean;
+    birthdate?: string;
 };
 
 export type Signout = {
@@ -315,6 +320,7 @@ export type VerifyOtpResponse = {
         message: string;
         access_token?: string;
         desquare_token?: string;
+        reset_token?: string;
     };
 };
 
@@ -328,10 +334,10 @@ export type VerifyOtp = {
 
 export type CreateBanners = {
     promotion_name: string;
-    redirect_url?: string;
+    redirect_url?: string | null;
     image_ar_id: number;
     image_en_id: number;
-    brand_id?: number;
+    brand_id?: number | null;
     has_action?: boolean;
     disabled?: boolean;
 };
@@ -408,10 +414,10 @@ export type ReadOneBannersQuery = {
 
 export type UpdateBanners = {
     promotion_name?: string;
-    redirect_url?: string;
+    redirect_url?: string | null;
     image_ar_id?: number;
     image_en_id?: number;
-    brand_id?: number;
+    brand_id?: number | null;
     has_action?: boolean;
     disabled?: boolean;
 };
@@ -425,7 +431,7 @@ export type CreateBrands = {
     logo_id: number;
     product_picture_id: number;
     background_logo_id: number;
-    display_order?: number;
+    display_order?: number | null;
     brand_id_brand_translations: Array<{
         description: string;
         name: string;
@@ -477,6 +483,10 @@ export type ReadBrandsFilters = {
     updated_at?: {
         $val?: string;
         $op: 'Eq' | 'NotEq' | 'GreaterThan' | 'LessThan' | 'GreaterThanOrEq' | 'LessThanOrEq' | 'IsNull' | 'IsNotNull';
+    };
+    language?: {
+        $val?: string | Array<string>;
+        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
     };
 };
 
@@ -736,6 +746,10 @@ export type ReadNotificationFilters = {
         $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
     };
     user_id?: {
+        $val?: string | number | Array<string | number>;
+        $op: 'Eq' | 'NotEq' | 'GreaterThan' | 'LessThan' | 'GreaterThanOrEq' | 'LessThanOrEq' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
+    };
+    brand_id?: {
         $val?: string | number | Array<string | number>;
         $op: 'Eq' | 'NotEq' | 'GreaterThan' | 'LessThan' | 'GreaterThanOrEq' | 'LessThanOrEq' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
     };
@@ -1024,10 +1038,6 @@ export type ReadUsersFilters = {
         $val?: string | number | Array<string | number>;
         $op: 'Eq' | 'NotEq' | 'GreaterThan' | 'LessThan' | 'GreaterThanOrEq' | 'LessThanOrEq' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
     } | null;
-    password?: {
-        $val?: string | Array<string>;
-        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
-    } | null;
     name?: {
         $val?: string | Array<string>;
         $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
@@ -1044,45 +1054,9 @@ export type ReadUsersFilters = {
         $val?: string | Array<string>;
         $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
     } | null;
-    verification_code?: {
-        $val?: string | Array<string>;
-        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
-    } | null;
-    verification_code_expire_at?: {
-        $val?: string;
-        $op: 'Eq' | 'NotEq' | 'GreaterThan' | 'LessThan' | 'GreaterThanOrEq' | 'LessThanOrEq' | 'IsNull' | 'IsNotNull';
-    } | null;
     account_verified?: {
         $val?: string | boolean;
         $op: 'Is' | 'IsNot' | 'IsNull' | 'IsNotNull';
-    } | null;
-    verification_reason?: {
-        $val?: string | Array<string>;
-        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
-    } | null;
-    apple_token?: {
-        $val?: string | Array<string>;
-        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
-    } | null;
-    google_token?: {
-        $val?: string | Array<string>;
-        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
-    } | null;
-    facebook_token?: {
-        $val?: string | Array<string>;
-        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
-    } | null;
-    access_token?: {
-        $val?: string | Array<string>;
-        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
-    } | null;
-    de_square_token?: {
-        $val?: string | Array<string>;
-        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
-    } | null;
-    de_square_token_expire_at?: {
-        $val?: string;
-        $op: 'Eq' | 'NotEq' | 'GreaterThan' | 'LessThan' | 'GreaterThanOrEq' | 'LessThanOrEq' | 'IsNull' | 'IsNotNull';
     } | null;
     role?: {
         $val?: string | Array<string>;
@@ -1108,24 +1082,20 @@ export type ReadUsersFilters = {
         $val?: string;
         $op: 'Eq' | 'NotEq' | 'GreaterThan' | 'LessThan' | 'GreaterThanOrEq' | 'LessThanOrEq' | 'IsNull' | 'IsNotNull';
     } | null;
+    search?: {
+        $val?: string | Array<string>;
+        $op: 'Eq' | 'NotEq' | 'Contains' | 'StartsWith' | 'EndsWith' | 'IsNull' | 'IsNotNull' | 'In' | 'NotIn';
+    } | null;
 };
 
 export type ReadUsersOrders = {
     id?: 'asc' | 'desc';
-    password?: 'asc' | 'desc';
     name?: 'asc' | 'desc';
     phone_number?: 'asc' | 'desc';
     phone_number_key?: 'asc' | 'desc';
     email?: 'asc' | 'desc';
-    verification_code?: 'asc' | 'desc';
     verification_code_expire_at?: 'asc' | 'desc';
     account_verified?: 'asc' | 'desc';
-    verification_reason?: 'asc' | 'desc';
-    apple_token?: 'asc' | 'desc';
-    google_token?: 'asc' | 'desc';
-    facebook_token?: 'asc' | 'desc';
-    access_token?: 'asc' | 'desc';
-    de_square_token?: 'asc' | 'desc';
     de_square_token_expire_at?: 'asc' | 'desc';
     role?: 'asc' | 'desc';
     birthdate?: 'asc' | 'desc';
@@ -1153,8 +1123,8 @@ export type UpdateProfile = {
     profile_image?: number;
     name?: string;
     password?: string;
+    current_password?: string;
     fcm_token?: string;
-    rank?: 1 | 2 | 3;
     birthdate?: string;
 };
 
@@ -1298,6 +1268,26 @@ export type AuthControllerSigninData = {
 export type AuthControllerSigninResponses = {
     /**
      * The signin has been successfully completed.
+     */
+    200: unknown;
+};
+
+export type AuthControllerChangePasswordData = {
+    /**
+     * Current and new password of the signed-in user.
+     */
+    body: {
+        current_password: string;
+        new_password: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/auth/change-password';
+};
+
+export type AuthControllerChangePasswordResponses = {
+    /**
+     * Password changed; a fresh session is returned (and set as cookie for the CMS).
      */
     200: unknown;
 };
@@ -1694,22 +1684,11 @@ export type MediaControllerStreamMediaData = {
     url: '/media/{id}/stream';
 };
 
-export type MediaControllerStreamMediaErrors = {
-    /**
-     * Media file not found.
-     */
-    404: unknown;
-};
-
 export type MediaControllerStreamMediaResponses = {
     /**
      * The Media file is being streamed.
      */
     200: unknown;
-    /**
-     * Partial content is being streamed (for range requests).
-     */
-    206: unknown;
 };
 
 export type TermsControllerReadData = {
@@ -1837,7 +1816,7 @@ export type BrandsControllerReadData = {
     path?: never;
     query: {
         /**
-         * The query to be used to read all Brands.
+         * The query to be used to read all Brands (pagination, relations, orders, etc.). Use filters[language] with filters[name] or filters[description] to filter by language.
          */
         query: ReadBrandsQuery;
     };
@@ -1846,7 +1825,7 @@ export type BrandsControllerReadData = {
 
 export type BrandsControllerReadResponses = {
     /**
-     * The Brands has been successfully read.
+     * The Brands have been successfully retrieved.
      */
     200: {
         data?: Array<BrandsEntity>;
@@ -2056,7 +2035,7 @@ export type BannersControllerSoftDeleteResponse = BannersControllerSoftDeleteRes
 
 export type NotificationControllerCreateBarqData = {
     /**
-     * The Barq Notification to be created.
+     * The Barq Notification to be created. Requires x-stars-api-key (server-to-server; not used by mobile).
      */
     body: CreateBarqNotification;
     path?: never;
@@ -2284,6 +2263,37 @@ export type ScheduledNotificationControllerReadResponses = {
 
 export type ScheduledNotificationControllerReadResponse = ScheduledNotificationControllerReadResponses[keyof ScheduledNotificationControllerReadResponses];
 
+export type ScheduledNotificationControllerCancelData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/scheduled-notifications/{id}';
+};
+
+export type ScheduledNotificationControllerCancelErrors = {
+    /**
+     * Scheduled Notification not found.
+     */
+    404: unknown;
+    /**
+     * The Scheduled Notification is no longer pending (already processing, sent, failed or cancelled).
+     */
+    409: unknown;
+};
+
+export type ScheduledNotificationControllerCancelResponses = {
+    /**
+     * The pending Scheduled Notification has been cancelled (status set to "cancelled"); it will not be sent.
+     */
+    200: {
+        data?: ScheduledNotificationsEntity;
+    };
+};
+
+export type ScheduledNotificationControllerCancelResponse = ScheduledNotificationControllerCancelResponses[keyof ScheduledNotificationControllerCancelResponses];
+
 export type ScheduledNotificationControllerReadOneData = {
     body?: never;
     path: {
@@ -2339,15 +2349,9 @@ export type OnboardingImagesControllerReadResponse = OnboardingImagesControllerR
 
 export type OnboardingImagesControllerCreateData = {
     /**
-     * Upload onboarding image with optional display order
+     * The Onboarding Image to be created.
      */
-    body: {
-        file?: Blob | File;
-        /**
-         * Optional display order (defaults to highest + 1)
-         */
-        display_order?: number;
-    };
+    body: CreateOnboardingImages;
     path?: never;
     query?: never;
     url: '/onboarding-images';
@@ -2427,7 +2431,6 @@ export type OnboardingImagesControllerReorderResponses = {
      * Onboarding images have been successfully reordered.
      */
     200: unknown;
-    201: unknown;
 };
 
 export type OnboardingImagesControllerSoftDeleteData = {
@@ -2447,3 +2450,109 @@ export type OnboardingImagesControllerSoftDeleteResponses = {
 };
 
 export type OnboardingImagesControllerSoftDeleteResponse = OnboardingImagesControllerSoftDeleteResponses[keyof OnboardingImagesControllerSoftDeleteResponses];
+
+export type CmsUsersControllerListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/cms-users';
+};
+
+export type CmsUsersControllerListResponses = {
+    200: unknown;
+};
+
+export type CmsUsersControllerListInvitationsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/cms-users/invitations';
+};
+
+export type CmsUsersControllerListInvitationsResponses = {
+    200: unknown;
+};
+
+export type CmsUsersControllerInviteData = {
+    body: {
+        email: string;
+        name?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/cms-users/invitations';
+};
+
+export type CmsUsersControllerInviteResponses = {
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type CmsUsersControllerInviteResponse = CmsUsersControllerInviteResponses[keyof CmsUsersControllerInviteResponses];
+
+export type CmsUsersControllerResendData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/cms-users/invitations/{id}/resend';
+};
+
+export type CmsUsersControllerResendResponses = {
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type CmsUsersControllerResendResponse = CmsUsersControllerResendResponses[keyof CmsUsersControllerResendResponses];
+
+export type CmsUsersControllerRevokeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/cms-users/invitations/{id}';
+};
+
+export type CmsUsersControllerRevokeResponses = {
+    200: unknown;
+};
+
+export type CmsUsersControllerSetPasswordData = {
+    body: {
+        password: string;
+        current_password: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/cms-users/{id}/password';
+};
+
+export type CmsUsersControllerSetPasswordResponses = {
+    200: unknown;
+};
+
+export type CmsInvitationsPublicControllerLookupData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/invitations/{token}';
+};
+
+export type CmsInvitationsPublicControllerLookupResponses = {
+    200: unknown;
+};
+
+export type CmsInvitationsPublicControllerAcceptData = {
+    body: {
+        token: string;
+        name?: string;
+        password: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/auth/accept-invitation';
+};
+
+export type CmsInvitationsPublicControllerAcceptResponses = {
+    200: unknown;
+};

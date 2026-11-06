@@ -24,6 +24,21 @@ export const authApi = {
       reset_token,
     }),
 
+  changePassword: (current_password: string, new_password: string) =>
+    api.post<AuthResponse>('/auth/change-password', {
+      current_password,
+      new_password,
+    }),
+
+  getInvitation: (token: string) =>
+    api.get<{ data: { email: string; name: string | null } }>(
+      `/auth/invitations/${encodeURIComponent(token)}`,
+      { suppressError: true } as any
+    ),
+
+  acceptInvitation: (body: { token: string; name?: string; password: string }) =>
+    api.post('/auth/accept-invitation', body),
+
   getSessionData: (sessionId: string) =>
     api.get(`/auth/get-session-data/${sessionId}`),
 };

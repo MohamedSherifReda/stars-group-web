@@ -9,6 +9,7 @@ import TermsAndConditions from '~/pages/terms-conditions';
 const protectedRoutes = [
   '/dashboard',
   '/users',
+  '/admins',
   '/brands',
   '/banners',
   '/notifications',
